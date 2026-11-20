@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Box, Flex, HStack, Text, Icon, Image, Button } from '@chakra-ui/react';
 import { FaStar, FaHeart, FaCommentDots } from 'react-icons/fa';
+import api from '../services/api';
 
 export default function PostCard({ post }) {
-  // Controle de estado puramente visual para interação de curtida
   const [curtido, setCurtido] = useState(false);
   const [curtidas, setCurtidas] = useState(post?.curtidas || 0);
+  const [imagemErro, setImagemErro] = useState(false);
 
   // Extrai iniciais do nome do prestador quando houver
   const getIniciais = (nome) => {
@@ -21,13 +22,28 @@ export default function PostCard({ post }) {
   const cidade = prestador?.cidade;
   const avaliacao = prestador?.avaliacao != null ? prestador.avaliacao.toFixed(1) : null;
 
-  const toggleCurtir = () => {
-    if (curtido) {
-      setCurtidas((prev) => prev - 1);
-      setCurtido(false);
-    } else {
-      setCurtidas((prev) => prev + 1);
-      setCurtido(true);
+  // Verifica se o anexo existe, não é o texto padrão "string" do Swagger e não falhou ao carregar
+  const temAnexo =
+    post?.anexo &&
+    post.anexo.trim() !== '' &&
+    post.anexo !== 'string' &&
+    !imagemErro;
+
+  // Envia a curtida para a API e persiste no banco de dados
+  const toggleCurtir = async () => {
+    if (!curtido && post?.id) {
+      try {
+        // Chamada PATCH /posts/{id}
+        const response = await api.patch(`/posts/${post.id}`);
+        if (response.data && response.data.curtidas != null) {
+          setCurtidas(response.data.curtidas);
+        } else {
+          setCurtidas((prev) => prev + 1);
+        }
+        setCurtido(true);
+      } catch (error) {
+        console.error('Erro ao registrar curtida na API:', error);
+      }
     }
   };
 
@@ -146,8 +162,8 @@ export default function PostCard({ post }) {
         </Text>
       )}
 
-      {/* Área da Imagem / Anexo (renderiza apenas se o post tiver anexo real) */}
-      {post?.anexo && (
+      {/* Área da Imagem / Anexo (renderiza apenas se houver imagem válida e funcional) */}
+      {temAnexo && (
         <Box
           w="100%"
           borderRadius="14px"
@@ -163,12 +179,13 @@ export default function PostCard({ post }) {
             w="100%"
             maxH="420px"
             objectFit="cover"
+            onError={() => setImagemErro(true)}
           />
         </Box>
       )}
 
       {/* Rodapé do Card: Curtidas e Ações de Contato */}
-      <Flex align="center" justify="space-between" mt={post?.anexo ? 0 : 4} pt={1}>
+      <Flex align="center" justify="space-between" mt={temAnexo ? 0 : 4} pt={1}>
         {/* Botão de Curtida */}
         <HStack
           as="button"
