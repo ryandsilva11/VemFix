@@ -1,19 +1,132 @@
-import { Box, Flex, HStack, Text, Icon, useToast } from '@chakra-ui/react';
-import { FaUserCircle } from 'react-icons/fa';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import {
+  Box,
+  Flex,
+  HStack,
+  Text,
+  Icon,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  InputRightElement,
+  Spinner,
+  Badge,
+  useToast,
+} from '@chakra-ui/react';
+import { FaUserCircle, FaSearch, FaTimes } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../services/api';
 
 export default function Header() {
   const navigate = useNavigate();
   const toast = useToast();
   const { isAutenticado, usuario } = useAuth();
 
-  // Extrai iniciais do nome do usuário logado
+  const [usuarios, setUsuarios] = useState([]);
+  const [termoBusca, setTermoBusca] = useState('');
+  const [isBuscando, setIsBuscando] = useState(false);
+  const [carregandoUsuarios, setCarregandoUsuarios] = useState(false);
+
+  const searchRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // Extrai iniciais do nome
   const getIniciais = (nome) => {
     if (!nome) return '';
     const partes = nome.trim().split(' ').filter(Boolean);
     if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
     return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+  };
+
+  // Carrega clientes e prestadores da API para a pesquisa
+  const carregarUsuarios = async () => {
+    if (usuarios.length > 0 || carregandoUsuarios) return;
+    setCarregandoUsuarios(true);
+    try {
+      const [resClientes, resPrestadores] = await Promise.all([
+        api.get('/clientes').catch(() => ({ data: [] })),
+        api.get('/prestadores').catch(() => ({ data: [] })),
+      ]);
+
+      const listaClientes = (resClientes.data || []).map((c) => ({
+        id: c.id,
+        nome: c.nome,
+        tipo: 'cliente',
+        prefixo: 'c/',
+        tag: 'Cliente',
+        cidade: c.cidade,
+      }));
+
+      const listaPrestadores = (resPrestadores.data || []).map((p) => ({
+        id: p.id,
+        nome: p.nome,
+        tipo: 'prestador',
+        prefixo: 'p/',
+        tag: p.catServico || 'Prestador',
+        cidade: p.cidade,
+      }));
+
+      setUsuarios([...listaPrestadores, ...listaClientes]);
+    } catch (err) {
+      console.error('Erro ao buscar usuários para pesquisa:', err);
+    } finally {
+      setCarregandoUsuarios(false);
+    }
+  };
+
+  // Fecha o dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setIsBuscando(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Filtra os usuários com base no termo digitado
+  const resultadosFiltrados = useMemo(() => {
+    const termo = termoBusca.trim().toLowerCase();
+    if (!termo) return [];
+
+    let buscaNome = termo;
+    let apenasTipo = null;
+
+    if (termo.startsWith('p/')) {
+      apenasTipo = 'prestador';
+      buscaNome = termo.slice(2).trim();
+    } else if (termo.startsWith('c/')) {
+      apenasTipo = 'cliente';
+      buscaNome = termo.slice(2).trim();
+    }
+
+    return usuarios.filter((u) => {
+      const bateTipo = !apenasTipo || u.tipo === apenasTipo;
+      const bateNome =
+        buscaNome === '' || (u.nome && u.nome.toLowerCase().includes(buscaNome));
+      return bateTipo && bateNome;
+    });
+  }, [termoBusca, usuarios]);
+
+  const handleSelecionarUsuario = (u) => {
+    setIsBuscando(false);
+    setTermoBusca('');
+    toast({
+      title: `${u.prefixo}${u.nome}`,
+      description: `Selecionado: ${u.tag}${u.cidade ? ' • ' + u.cidade : ''}`,
+      status: 'info',
+      duration: 3000,
+      isClosable: true,
+      position: 'top',
+    });
+  };
+
+  const handleFocarPesquisa = () => {
+    inputRef.current?.focus();
+    setIsBuscando(true);
+    carregarUsuarios();
   };
 
   const handleMinhasConversas = () => {
@@ -65,92 +178,253 @@ export default function Header() {
         px={{ base: 4, md: 8 }}
         align="center"
         justify="space-between"
+        gap={4}
       >
-        {/* Logo VemFix */}
-        <HStack
-          spacing={2.5}
-          cursor="pointer"
-          userSelect="none"
-          onClick={() => navigate('/')}
-        >
-          <Flex
-            w="34px"
-            h="34px"
-            bg="vemfix.green"
-            borderRadius="8px"
-            align="center"
-            justify="center"
-            color="white"
-            fontWeight="800"
-            fontSize="18px"
-            fontFamily="heading"
-            boxShadow="0 2px 6px rgba(26, 158, 110, 0.25)"
-          >
-            V
-          </Flex>
-          <Text
-            fontFamily="heading"
-            fontSize="22px"
-            fontWeight="800"
-            color="vemfix.green"
-            letterSpacing="-0.5px"
-          >
-            VemFix
-          </Text>
-        </HStack>
-
-        {/* Links de Navegação */}
-        <HStack spacing={{ base: 4, md: 8 }} display={{ base: 'none', sm: 'flex' }}>
-          <Text
-            fontSize="14px"
-            fontWeight="600"
-            color="vemfix.green"
+        {/* Lado Esquerdo: Logo + Links juntos empurrados para a esquerda */}
+        <HStack spacing={{ base: 4, md: 8 }} align="center">
+          {/* Logo VemFix */}
+          <HStack
+            spacing={2.5}
             cursor="pointer"
+            userSelect="none"
             onClick={() => navigate('/')}
-            transition="color 0.2s"
           >
-            Início
-          </Text>
-          <Text
-            fontSize="14px"
-            fontWeight="500"
-            color="vemfix.grayBody"
-            cursor="pointer"
-            _hover={{ color: 'vemfix.green' }}
-            transition="color 0.2s"
-          >
-            Pesquisar
-          </Text>
-          <Text
-            fontSize="14px"
-            fontWeight="500"
-            color="vemfix.grayBody"
-            cursor="pointer"
-            _hover={{ color: 'vemfix.green' }}
-            onClick={handleMinhasConversas}
-            transition="color 0.2s"
-          >
-            Minhas conversas
-          </Text>
-          <Text
-            fontSize="14px"
-            fontWeight="500"
-            color="vemfix.grayBody"
-            cursor="pointer"
-            _hover={{ color: 'vemfix.green' }}
-            transition="color 0.2s"
-          >
-            Suporte
-          </Text>
+            <Flex
+              w="34px"
+              h="34px"
+              bg="vemfix.green"
+              borderRadius="8px"
+              align="center"
+              justify="center"
+              color="white"
+              fontWeight="800"
+              fontSize="18px"
+              fontFamily="heading"
+              boxShadow="0 2px 6px rgba(26, 158, 110, 0.25)"
+            >
+              V
+            </Flex>
+            <Text
+              fontFamily="heading"
+              fontSize="22px"
+              fontWeight="800"
+              color="vemfix.green"
+              letterSpacing="-0.5px"
+            >
+              VemFix
+            </Text>
+          </HStack>
+
+          {/* Links de Navegação */}
+          <HStack spacing={{ base: 4, md: 6 }} display={{ base: 'none', lg: 'flex' }}>
+            <Text
+              fontSize="14px"
+              fontWeight="600"
+              color="vemfix.green"
+              cursor="pointer"
+              onClick={() => navigate('/')}
+              transition="color 0.2s"
+            >
+              Início
+            </Text>
+            <Text
+              fontSize="14px"
+              fontWeight="500"
+              color="vemfix.grayBody"
+              cursor="pointer"
+              _hover={{ color: 'vemfix.green' }}
+              onClick={handleFocarPesquisa}
+              transition="color 0.2s"
+            >
+              Pesquisar
+            </Text>
+            <Text
+              fontSize="14px"
+              fontWeight="500"
+              color="vemfix.grayBody"
+              cursor="pointer"
+              _hover={{ color: 'vemfix.green' }}
+              onClick={handleMinhasConversas}
+              transition="color 0.2s"
+            >
+              Minhas conversas
+            </Text>
+            <Text
+              fontSize="14px"
+              fontWeight="500"
+              color="vemfix.grayBody"
+              cursor="pointer"
+              _hover={{ color: 'vemfix.green' }}
+              transition="color 0.2s"
+            >
+              Suporte
+            </Text>
+          </HStack>
         </HStack>
 
-        {/* Perfil do Usuário */}
-        <HStack spacing={3}>
+        {/* Lado Direito: Barra de Pesquisa (levemente mais próxima do ícone) + Ícone de Perfil */}
+        <HStack spacing={3} flex={1} justify="flex-end" maxW="460px">
+          {/* Barra de Pesquisa */}
+          <Box
+            position="relative"
+            ref={searchRef}
+            w="100%"
+            maxW={{ base: '190px', sm: '270px', md: '340px' }}
+          >
+            <InputGroup size="sm">
+              <InputLeftElement pointerEvents="none" color="gray.400" h="100%">
+                <FaSearch size={13} />
+              </InputLeftElement>
+              <Input
+                ref={inputRef}
+                value={termoBusca}
+                onChange={(e) => {
+                  setTermoBusca(e.target.value);
+                  setIsBuscando(true);
+                }}
+                onFocus={() => {
+                  setIsBuscando(true);
+                  carregarUsuarios();
+                }}
+                placeholder="Pesquisar (ex: p/ ou c/)..."
+                bg="gray.50"
+                border="1px solid"
+                borderColor="vemfix.border"
+                borderRadius="full"
+                h="36px"
+                fontSize="13px"
+                _hover={{ borderColor: 'gray.300', bg: 'white' }}
+                _focus={{
+                  bg: 'white',
+                  borderColor: 'vemfix.green',
+                  boxShadow: '0 0 0 1px #1A9E6E',
+                }}
+              />
+              {termoBusca && (
+                <InputRightElement h="100%">
+                  <Icon
+                    as={FaTimes}
+                    fontSize="11px"
+                    color="gray.400"
+                    cursor="pointer"
+                    _hover={{ color: 'gray.600' }}
+                    onClick={() => setTermoBusca('')}
+                  />
+                </InputRightElement>
+              )}
+            </InputGroup>
+
+            {/* Lista Flutuante de Resultados */}
+            {isBuscando && termoBusca.trim().length > 0 && (
+              <Box
+                position="absolute"
+                top="calc(100% + 8px)"
+                right={0}
+                w={{ base: '280px', sm: '340px' }}
+                bg="white"
+                borderRadius="14px"
+                boxShadow="0 10px 25px -3px rgba(0, 0, 0, 0.12), 0 4px 10px -2px rgba(0, 0, 0, 0.05)"
+                border="1px solid"
+                borderColor="vemfix.border"
+                zIndex={200}
+                overflow="hidden"
+              >
+                {carregandoUsuarios ? (
+                  <Flex p={4} justify="center" align="center" gap={2}>
+                    <Spinner size="xs" color="vemfix.green" />
+                    <Text fontSize="13px" color="vemfix.graySubtitle">
+                      Buscando usuários...
+                    </Text>
+                  </Flex>
+                ) : resultadosFiltrados.length === 0 ? (
+                  <Box p={4} textAlign="center">
+                    <Text fontSize="13px" color="vemfix.graySubtitle">
+                      Nenhum usuário encontrado para <strong>"{termoBusca}"</strong>
+                    </Text>
+                  </Box>
+                ) : (
+                  <Box maxH="380px" overflowY="auto" py={1.5}>
+                    {resultadosFiltrados.map((u) => (
+                      <Flex
+                        key={`${u.tipo}-${u.id}`}
+                        align="center"
+                        justify="space-between"
+                        px={3.5}
+                        py={2}
+                        cursor="pointer"
+                        _hover={{ bg: 'gray.50' }}
+                        transition="background 0.15s"
+                        onClick={() => handleSelecionarUsuario(u)}
+                      >
+                        <HStack spacing={2.5}>
+                          {/* Mini Avatar com Iniciais */}
+                          <Flex
+                            w="28px"
+                            h="28px"
+                            minW="28px"
+                            borderRadius="full"
+                            bg={u.tipo === 'prestador' ? 'vemfix.greenLight' : 'blue.50'}
+                            color={u.tipo === 'prestador' ? 'vemfix.green' : 'blue.600'}
+                            fontWeight="800"
+                            fontSize="11px"
+                            align="center"
+                            justify="center"
+                          >
+                            {getIniciais(u.nome)}
+                          </Flex>
+
+                          <Box>
+                            {/* Identificador com prefixo p/ ou c/ estilo Reddit */}
+                            <Text
+                              fontSize="13px"
+                              fontWeight="700"
+                              color="vemfix.dark"
+                              lineHeight="short"
+                            >
+                              <Text
+                                as="span"
+                                color={u.tipo === 'prestador' ? 'vemfix.green' : 'blue.600'}
+                                fontWeight="800"
+                              >
+                                {u.prefixo}
+                              </Text>
+                              {u.nome}
+                            </Text>
+
+                            {u.cidade && (
+                              <Text fontSize="11px" color="vemfix.graySubtitle">
+                                {u.cidade}
+                              </Text>
+                            )}
+                          </Box>
+                        </HStack>
+
+                        {/* Badge indicador do tipo / categoria */}
+                        <Badge
+                          fontSize="10px"
+                          borderRadius="full"
+                          px={2}
+                          py={0.5}
+                          colorScheme={u.tipo === 'prestador' ? 'green' : 'blue'}
+                          textTransform="none"
+                        >
+                          {u.tag}
+                        </Badge>
+                      </Flex>
+                    ))}
+                  </Box>
+                )}
+              </Box>
+            )}
+          </Box>
+
+          {/* Perfil do Usuário */}
           <Flex
             align="center"
             justify="center"
             w="38px"
             h="38px"
+            minW="38px"
             borderRadius="full"
             bg="vemfix.greenLight"
             color="vemfix.green"
