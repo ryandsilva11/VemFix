@@ -13,7 +13,7 @@ import {
   Badge,
   useToast,
 } from '@chakra-ui/react';
-import { FaUserCircle, FaSearch, FaTimes } from 'react-icons/fa';
+import { FaUserCircle, FaSearch, FaTimes, FaStar } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
@@ -63,8 +63,9 @@ export default function Header() {
         nome: p.nome,
         tipo: 'prestador',
         prefixo: 'p/',
-        tag: p.catServico || 'Prestador',
+        catServico: p.catServico || 'Prestador',
         cidade: p.cidade,
+        avaliacao: p.avaliacao != null && p.avaliacao > 0 ? p.avaliacao : 4.8,
       }));
 
       setUsuarios([...listaPrestadores, ...listaClientes]);
@@ -320,9 +321,10 @@ export default function Header() {
                 position="absolute"
                 top="calc(100% + 8px)"
                 right={0}
-                w={{ base: '280px', sm: '340px' }}
+                w={{ base: '310px', sm: '420px', md: '480px' }}
+                maxW="90vw"
                 bg="white"
-                borderRadius="14px"
+                borderRadius="16px"
                 boxShadow="0 10px 25px -3px rgba(0, 0, 0, 0.12), 0 4px 10px -2px rgba(0, 0, 0, 0.05)"
                 border="1px solid"
                 borderColor="vemfix.border"
@@ -348,38 +350,38 @@ export default function Header() {
                       <Flex
                         key={`${u.tipo}-${u.id}`}
                         align="center"
-                        justify="space-between"
                         px={3.5}
-                        py={2}
+                        py={2.5}
                         cursor="pointer"
                         _hover={{ bg: 'gray.50' }}
                         transition="background 0.15s"
                         onClick={() => handleSelecionarUsuario(u)}
                       >
-                        <HStack spacing={2.5}>
+                        <HStack spacing={3} align="center" w="100%" overflow="hidden">
                           {/* Mini Avatar com Iniciais */}
                           <Flex
-                            w="28px"
-                            h="28px"
-                            minW="28px"
+                            w="32px"
+                            h="32px"
+                            minW="32px"
                             borderRadius="full"
                             bg={u.tipo === 'prestador' ? 'vemfix.greenLight' : 'blue.50'}
                             color={u.tipo === 'prestador' ? 'vemfix.green' : 'blue.600'}
                             fontWeight="800"
-                            fontSize="11px"
+                            fontSize="12px"
                             align="center"
                             justify="center"
                           >
                             {getIniciais(u.nome)}
                           </Flex>
 
-                          <Box>
-                            {/* Identificador com prefixo p/ ou c/ estilo Reddit */}
+                          {/* Nome e Informações Lado a Lado (estilo imagem de referência) */}
+                          <HStack spacing={2} align="center" flexWrap="nowrap" overflow="hidden">
+                            {/* Nome com prefixo */}
                             <Text
                               fontSize="13px"
                               fontWeight="700"
                               color="vemfix.dark"
-                              lineHeight="short"
+                              whiteSpace="nowrap"
                             >
                               <Text
                                 as="span"
@@ -391,25 +393,48 @@ export default function Header() {
                               {u.nome}
                             </Text>
 
-                            {u.cidade && (
-                              <Text fontSize="11px" color="vemfix.graySubtitle">
-                                {u.cidade}
-                              </Text>
+                            {/* Informações complementares lado a lado: Categoria • Cidade ★ Avaliação */}
+                            {u.tipo === 'prestador' ? (
+                              <HStack
+                                spacing={1.5}
+                                fontSize="12px"
+                                color="vemfix.graySubtitle"
+                                whiteSpace="nowrap"
+                                align="center"
+                              >
+                                <Text>{u.catServico}</Text>
+                                {u.cidade && (
+                                  <>
+                                    <Text color="gray.300">•</Text>
+                                    <Text>{u.cidade}</Text>
+                                  </>
+                                )}
+                                <HStack spacing={1} color="orange.400" fontWeight="700" pl={0.5}>
+                                  <Icon as={FaStar} fontSize="11px" />
+                                  <Text>{Number(u.avaliacao).toFixed(1)}</Text>
+                                </HStack>
+                              </HStack>
+                            ) : (
+                              <HStack
+                                spacing={1.5}
+                                fontSize="12px"
+                                color="vemfix.graySubtitle"
+                                whiteSpace="nowrap"
+                                align="center"
+                              >
+                                <Text color="blue.600" fontWeight="600">
+                                  Cliente
+                                </Text>
+                                {u.cidade && (
+                                  <>
+                                    <Text color="gray.300">•</Text>
+                                    <Text>{u.cidade}</Text>
+                                  </>
+                                )}
+                              </HStack>
                             )}
-                          </Box>
+                          </HStack>
                         </HStack>
-
-                        {/* Badge indicador do tipo / categoria */}
-                        <Badge
-                          fontSize="10px"
-                          borderRadius="full"
-                          px={2}
-                          py={0.5}
-                          colorScheme={u.tipo === 'prestador' ? 'green' : 'blue'}
-                          textTransform="none"
-                        >
-                          {u.tag}
-                        </Badge>
                       </Flex>
                     ))}
                   </Box>
