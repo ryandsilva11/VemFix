@@ -164,7 +164,7 @@ export default function Cadastro() {
       <Container maxW="640px" mb={4}>
         <HStack
           as="button"
-          onClick={() => navigate('/')}
+          onClick={() => navigate(-1)}
           spacing={2}
           color="vemfix.graySubtitle"
           _hover={{ color: 'vemfix.green' }}
@@ -173,7 +173,7 @@ export default function Cadastro() {
           transition="color 0.2s"
         >
           <FaArrowLeft />
-          <Text>Voltar para o início</Text>
+          <Text>Voltar</Text>
         </HStack>
       </Container>
 
