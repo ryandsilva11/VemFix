@@ -1,9 +1,15 @@
 import { useState } from 'react';
-import { Box, Flex, HStack, Text, Icon, Image, Button } from '@chakra-ui/react';
-import { FaStar, FaHeart, FaCommentDots } from 'react-icons/fa';
+import { Box, Flex, HStack, Text, Icon, Image, useToast } from '@chakra-ui/react';
+import { FaStar, FaHeart } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
 export default function PostCard({ post }) {
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { isAutenticado } = useAuth();
+
   const [curtido, setCurtido] = useState(false);
   const [curtidas, setCurtidas] = useState(post?.curtidas || 0);
   const [imagemErro, setImagemErro] = useState(false);
@@ -29,11 +35,31 @@ export default function PostCard({ post }) {
     post.anexo !== 'string' &&
     !imagemErro;
 
-  // Envia a curtida para a API e persiste no banco de dados
+  // Clicar no perfil do prestador (redireciona para cadastro se não estiver autenticado)
+  const handlePerfilPrestador = () => {
+    if (!isAutenticado) {
+      navigate('/cadastro');
+    } else {
+      toast({
+        title: `Perfil de ${nome || 'Prestador'}`,
+        description: 'A tela detalhada do prestador será implementada em breve.',
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+        position: 'top',
+      });
+    }
+  };
+
+  // Envia a curtida para a API e persiste no banco de dados (exige login)
   const toggleCurtir = async () => {
+    if (!isAutenticado) {
+      navigate('/cadastro');
+      return;
+    }
+
     if (!curtido && post?.id) {
       try {
-        // Chamada PATCH /posts/{id}
         const response = await api.patch(`/posts/${post.id}`);
         if (response.data && response.data.curtidas != null) {
           setCurtidas(response.data.curtidas);
@@ -62,10 +88,19 @@ export default function PostCard({ post }) {
         borderColor: 'brand.200',
       }}
     >
-      {/* Topo do Card: Avatar, Dados do Prestador e Avaliação */}
+      {/* Topo do Card: Avatar e Dados clicáveis do Prestador + Avaliação */}
       <Flex align="center" justify="space-between" mb={4}>
-        <HStack spacing={3.5} align="center">
-          {/* Avatar com iniciais reais */}
+        <HStack
+          as="button"
+          onClick={handlePerfilPrestador}
+          spacing={3.5}
+          align="center"
+          textAlign="left"
+          cursor="pointer"
+          _hover={{ opacity: 0.85 }}
+          transition="opacity 0.2s"
+        >
+          {/* Avatar com iniciais reais (agora botão clicável) */}
           {nome && (
             <Flex
               w="48px"
@@ -184,9 +219,8 @@ export default function PostCard({ post }) {
         </Box>
       )}
 
-      {/* Rodapé do Card: Curtidas e Ações de Contato */}
-      <Flex align="center" justify="space-between" mt={temAnexo ? 0 : 4} pt={1}>
-        {/* Botão de Curtida */}
+      {/* Rodapé do Card: Apenas Curtidas (os botões 'Ver perfil' e 'Conversar' foram retirados) */}
+      <Flex align="center" justify="flex-start" mt={temAnexo ? 0 : 4} pt={1}>
         <HStack
           as="button"
           spacing={2}
@@ -220,32 +254,6 @@ export default function PostCard({ post }) {
           >
             {curtidas.toLocaleString('pt-BR')}
           </Text>
-        </HStack>
-
-        {/* Botões de Ação */}
-        <HStack spacing={2}>
-          <Button
-            size="sm"
-            variant="ghost"
-            color="vemfix.grayBody"
-            fontSize="13px"
-            fontWeight="600"
-            _hover={{ bg: 'gray.100', color: 'vemfix.dark' }}
-          >
-            Ver perfil
-          </Button>
-          <Button
-            size="sm"
-            leftIcon={<FaCommentDots />}
-            bg="vemfix.greenLight"
-            color="vemfix.green"
-            fontSize="13px"
-            fontWeight="600"
-            _hover={{ bg: 'vemfix.green', color: 'white' }}
-            transition="0.2s"
-          >
-            Conversar
-          </Button>
         </HStack>
       </Flex>
     </Box>

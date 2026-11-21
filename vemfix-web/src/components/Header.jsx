@@ -1,7 +1,43 @@
-import { Box, Flex, HStack, Text, Icon, Avatar } from '@chakra-ui/react';
+import { Box, Flex, HStack, Text, Icon, Button, useToast } from '@chakra-ui/react';
 import { FaUserCircle } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Header() {
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { isAutenticado, usuario, logout } = useAuth();
+
+  const handleMinhasConversas = () => {
+    if (!isAutenticado) {
+      navigate('/cadastro');
+    } else {
+      toast({
+        title: 'Em breve!',
+        description: 'A tela de conversas será implementada nas próximas etapas.',
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+        position: 'top',
+      });
+    }
+  };
+
+  const handlePerfil = () => {
+    if (!isAutenticado) {
+      navigate('/cadastro');
+    } else {
+      toast({
+        title: `Perfil de ${usuario?.nome || 'Usuário'}`,
+        description: 'A tela de perfil será implementada nas próximas etapas.',
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+        position: 'top',
+      });
+    }
+  };
+
   return (
     <Box
       as="header"
@@ -23,7 +59,12 @@ export default function Header() {
         justify="space-between"
       >
         {/* Logo VemFix */}
-        <HStack spacing={2.5} cursor="pointer" userSelect="none">
+        <HStack
+          spacing={2.5}
+          cursor="pointer"
+          userSelect="none"
+          onClick={() => navigate('/')}
+        >
           <Flex
             w="34px"
             h="34px"
@@ -57,6 +98,7 @@ export default function Header() {
             fontWeight="600"
             color="vemfix.green"
             cursor="pointer"
+            onClick={() => navigate('/')}
             transition="color 0.2s"
           >
             Início
@@ -77,6 +119,7 @@ export default function Header() {
             color="vemfix.grayBody"
             cursor="pointer"
             _hover={{ color: 'vemfix.green' }}
+            onClick={handleMinhasConversas}
             transition="color 0.2s"
           >
             Minhas conversas
@@ -95,6 +138,27 @@ export default function Header() {
 
         {/* Perfil do Usuário */}
         <HStack spacing={3}>
+          {isAutenticado && (
+            <HStack spacing={2}>
+              <Text
+                fontSize="13px"
+                fontWeight="600"
+                color="vemfix.dark"
+                display={{ base: 'none', md: 'block' }}
+              >
+                Olá, {usuario?.nome ? usuario.nome.split(' ')[0] : 'Usuário'}
+              </Text>
+              <Button
+                size="xs"
+                variant="ghost"
+                colorScheme="red"
+                borderRadius="md"
+                onClick={logout}
+              >
+                Sair
+              </Button>
+            </HStack>
+          )}
           <Flex
             align="center"
             justify="center"
@@ -104,6 +168,7 @@ export default function Header() {
             bg="vemfix.greenLight"
             color="vemfix.green"
             cursor="pointer"
+            onClick={handlePerfil}
             _hover={{ transform: 'scale(1.05)', bg: 'brand.100' }}
             transition="all 0.2s"
             boxShadow="0 1px 3px rgba(0,0,0,0.05)"
