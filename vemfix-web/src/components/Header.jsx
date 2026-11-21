@@ -49,12 +49,17 @@ export default function Header() {
         api.get('/prestadores').catch(() => ({ data: [] })),
       ]);
 
+      const parseAvaliacao = (val) => {
+        if (val == null || val === '') return 0.0;
+        const num = Number(val);
+        return isNaN(num) ? 0.0 : num;
+      };
+
       const listaClientes = (resClientes.data || []).map((c) => ({
         id: c.id,
         nome: c.nome,
         tipo: 'cliente',
         prefixo: 'c/',
-        tag: 'Cliente',
         cidade: c.cidade,
       }));
 
@@ -63,9 +68,9 @@ export default function Header() {
         nome: p.nome,
         tipo: 'prestador',
         prefixo: 'p/',
-        catServico: p.catServico || 'Prestador',
+        catServico: p.catServico || '',
         cidade: p.cidade,
-        avaliacao: p.avaliacao != null && p.avaliacao > 0 ? p.avaliacao : 4.8,
+        avaliacao: parseAvaliacao(p.avaliacao),
       }));
 
       setUsuarios([...listaPrestadores, ...listaClientes]);
@@ -393,7 +398,7 @@ export default function Header() {
                               {u.nome}
                             </Text>
 
-                            {/* Informações complementares lado a lado: Categoria • Cidade ★ Avaliação */}
+                            {/* Informações complementares lado a lado: Prestador • Categoria • Cidade ★ Avaliação */}
                             {u.tipo === 'prestador' ? (
                               <HStack
                                 spacing={1.5}
@@ -402,7 +407,15 @@ export default function Header() {
                                 whiteSpace="nowrap"
                                 align="center"
                               >
-                                <Text>{u.catServico}</Text>
+                                <Text color="vemfix.green" fontWeight="600">
+                                  Prestador
+                                </Text>
+                                {u.catServico && (
+                                  <>
+                                    <Text color="gray.300">•</Text>
+                                    <Text>{u.catServico}</Text>
+                                  </>
+                                )}
                                 {u.cidade && (
                                   <>
                                     <Text color="gray.300">•</Text>
@@ -411,7 +424,7 @@ export default function Header() {
                                 )}
                                 <HStack spacing={1} color="orange.400" fontWeight="700" pl={0.5}>
                                   <Icon as={FaStar} fontSize="11px" />
-                                  <Text>{Number(u.avaliacao).toFixed(1)}</Text>
+                                  <Text>{Number(u.avaliacao ?? 0).toFixed(1)}</Text>
                                 </HStack>
                               </HStack>
                             ) : (
