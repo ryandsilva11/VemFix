@@ -119,14 +119,18 @@ export default function Header() {
   const handleSelecionarUsuario = (u) => {
     setIsBuscando(false);
     setTermoBusca('');
-    toast({
-      title: `${u.prefixo}${u.nome}`,
-      description: `Selecionado: ${u.tag}${u.cidade ? ' • ' + u.cidade : ''}`,
-      status: 'info',
-      duration: 3000,
-      isClosable: true,
-      position: 'top',
-    });
+    if (u.tipo === 'prestador') {
+      navigate(`/prestador/${u.id}`);
+    } else {
+      toast({
+        title: `${u.prefixo}${u.nome}`,
+        description: `Perfil de cliente será implementado na próxima etapa.`,
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+        position: 'top',
+      });
+    }
   };
 
   const handleFocarPesquisa = () => {
@@ -232,17 +236,6 @@ export default function Header() {
               transition="color 0.2s"
             >
               Início
-            </Text>
-            <Text
-              fontSize="14px"
-              fontWeight="500"
-              color="vemfix.grayBody"
-              cursor="pointer"
-              _hover={{ color: 'vemfix.green' }}
-              onClick={handleFocarPesquisa}
-              transition="color 0.2s"
-            >
-              Pesquisar
             </Text>
             <Text
               fontSize="14px"

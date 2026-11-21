@@ -39,6 +39,11 @@ public class PostService {
     }
 
     @Transactional
+    public List<PostResponseDTO> findByPrestadorId(Long prestadorId) {
+        return postRepository.findByPrestadorId(prestadorId).stream().map(PostResponseDTO::new).toList();
+    }
+
+    @Transactional
     public PostResponseDTO curtir(Long id) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post não encontrado com o ID " + id));

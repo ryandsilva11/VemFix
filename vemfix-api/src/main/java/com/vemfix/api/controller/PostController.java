@@ -40,6 +40,11 @@ public class PostController {
         return ResponseEntity.ok(service.listAll());
     }
 
+    @GetMapping("/prestador/{prestadorId}")
+    public ResponseEntity<List<PostResponseDTO>> findByPrestadorId(@PathVariable Long prestadorId) {
+        return ResponseEntity.ok(service.findByPrestadorId(prestadorId));
+    }
+
     @PatchMapping("/{id}")
     public ResponseEntity<PostResponseDTO> curtir(@PathVariable Long id) {
         return ResponseEntity.ok(service.curtir(id));

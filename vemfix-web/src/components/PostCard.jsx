@@ -35,19 +35,10 @@ export default function PostCard({ post }) {
     post.anexo !== 'string' &&
     !imagemErro;
 
-  // Clicar no perfil do prestador (redireciona para cadastro se não estiver autenticado)
+  // Clicar no perfil do prestador (abre o perfil mesmo sem estar logado)
   const handlePerfilPrestador = () => {
-    if (!isAutenticado) {
-      navigate('/cadastro');
-    } else {
-      toast({
-        title: `Perfil de ${nome || 'Prestador'}`,
-        description: 'A tela detalhada do prestador será implementada em breve.',
-        status: 'info',
-        duration: 3000,
-        isClosable: true,
-        position: 'top',
-      });
+    if (prestador?.id) {
+      navigate(`/prestador/${prestador.id}`);
     }
   };
 
