@@ -116,7 +116,7 @@ export default function Cadastro() {
 
       const response = await api.post('/clientes', payload);
       // Salva no contexto de autenticação como usuário logado
-      login(response.data);
+      login({ ...response.data, tipo: 'CLIENTE' });
       // Redireciona para o Feed
       navigate('/');
     } catch (error) {
@@ -147,7 +147,7 @@ export default function Cadastro() {
 
       const response = await api.post('/prestadores', payload);
       // Salva no contexto de autenticação como usuário logado
-      login(response.data);
+      login({ ...response.data, tipo: 'PRESTADOR' });
       // Redireciona para o Feed
       navigate('/');
     } catch (error) {
