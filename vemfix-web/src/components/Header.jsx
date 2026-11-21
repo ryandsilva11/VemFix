@@ -132,6 +132,10 @@ export default function Header() {
     carregarUsuarios();
   };
 
+  const isPrestador =
+    isAutenticado &&
+    (usuario?.tipo?.toUpperCase() === 'PRESTADOR' || Boolean(usuario?.catServico));
+
   const handleMinhasConversas = () => {
     if (!isAutenticado) {
       navigate('/cadastro');
@@ -151,8 +155,6 @@ export default function Header() {
     if (!isAutenticado) {
       navigate('/cadastro');
     } else {
-      const isPrestador =
-        usuario?.tipo === 'PRESTADOR' || Boolean(usuario?.catServico);
       if (isPrestador && usuario?.id) {
         navigate(`/prestador/${usuario.id}`);
       } else if (usuario?.id) {
@@ -451,13 +453,32 @@ export default function Header() {
             h="38px"
             minW="38px"
             borderRadius="full"
-            bg="vemfix.greenLight"
-            color="vemfix.green"
+            bg={
+              !isAutenticado
+                ? 'gray.100'
+                : isPrestador
+                ? 'vemfix.greenLight'
+                : 'blue.50'
+            }
+            color={
+              !isAutenticado
+                ? 'gray.500'
+                : isPrestador
+                ? 'vemfix.green'
+                : 'blue.600'
+            }
             fontWeight="700"
             fontSize="14px"
             cursor="pointer"
             onClick={handlePerfil}
-            _hover={{ transform: 'scale(1.05)', bg: 'brand.100' }}
+            _hover={{
+              transform: 'scale(1.05)',
+              bg: !isAutenticado
+                ? 'gray.200'
+                : isPrestador
+                ? 'brand.100'
+                : 'blue.100',
+            }}
             transition="all 0.2s"
             boxShadow="0 1px 3px rgba(0,0,0,0.05)"
           >
