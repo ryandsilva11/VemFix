@@ -6,6 +6,7 @@ import Feed from './pages/Feed';
 import Cadastro from './pages/Cadastro';
 import Login from './pages/Login';
 import PerfilPrestador from './pages/PerfilPrestador';
+import PerfilCliente from './pages/PerfilCliente';
 import { AuthProvider } from './contexts/AuthContext';
 
 function LayoutPrincipal() {
@@ -27,6 +28,7 @@ function App() {
           <Route path="/cadastro" element={<Cadastro />} />
           <Route path="/login" element={<Login />} />
           <Route path="/prestador/:id" element={<PerfilPrestador />} />
+          <Route path="/cliente/:id" element={<PerfilCliente />} />
           <Route path="*" element={<LayoutPrincipal />} />
         </Routes>
       </BrowserRouter>

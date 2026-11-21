@@ -121,15 +121,8 @@ export default function Header() {
     setTermoBusca('');
     if (u.tipo === 'prestador') {
       navigate(`/prestador/${u.id}`);
-    } else {
-      toast({
-        title: `${u.prefixo}${u.nome}`,
-        description: `Perfil de cliente será implementado na próxima etapa.`,
-        status: 'info',
-        duration: 3000,
-        isClosable: true,
-        position: 'top',
-      });
+    } else if (u.tipo === 'cliente') {
+      navigate(`/cliente/${u.id}`);
     }
   };
 
@@ -158,14 +151,15 @@ export default function Header() {
     if (!isAutenticado) {
       navigate('/cadastro');
     } else {
-      toast({
-        title: `Perfil de ${usuario?.nome || 'Usuário'}`,
-        description: 'A tela de perfil será implementada nas próximas etapas.',
-        status: 'info',
-        duration: 3000,
-        isClosable: true,
-        position: 'top',
-      });
+      const isPrestador =
+        usuario?.tipo === 'PRESTADOR' || Boolean(usuario?.catServico);
+      if (isPrestador && usuario?.id) {
+        navigate(`/prestador/${usuario.id}`);
+      } else if (usuario?.id) {
+        navigate(`/cliente/${usuario.id}`);
+      } else {
+        navigate('/');
+      }
     }
   };
 
