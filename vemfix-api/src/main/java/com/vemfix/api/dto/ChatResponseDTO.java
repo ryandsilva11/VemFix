@@ -10,6 +10,7 @@ public record ChatResponseDTO(
         String clienteNome,
         Long prestadorId,
         String prestadorNome,
+        String prestadorCatServico,
         LocalDateTime dataCriacao,
         LocalDateTime ultimaMensagem
 ) {
@@ -20,6 +21,7 @@ public record ChatResponseDTO(
                 chat.getCliente().getNome(),
                 chat.getPrestador().getId(),
                 chat.getPrestador().getNome(),
+                chat.getPrestador() != null ? chat.getPrestador().getCatServico() : null,
                 chat.getDataCriacao(),
                 chat.getUltimaMensagem()
         );

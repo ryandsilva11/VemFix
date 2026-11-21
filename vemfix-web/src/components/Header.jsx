@@ -142,18 +142,7 @@ export default function Header() {
     (usuario?.tipo?.toUpperCase() === 'PRESTADOR' || Boolean(usuario?.catServico));
 
   const handleMinhasConversas = () => {
-    if (!isAutenticado) {
-      navigate('/cadastro');
-    } else {
-      toast({
-        title: 'Em breve!',
-        description: 'A tela de conversas será implementada nas próximas etapas.',
-        status: 'info',
-        duration: 3000,
-        isClosable: true,
-        position: 'top',
-      });
-    }
+    navigate('/conversas');
   };
 
   const handlePerfil = () => {

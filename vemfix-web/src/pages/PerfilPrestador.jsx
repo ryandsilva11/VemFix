@@ -73,19 +73,33 @@ export default function PerfilPrestador() {
     }
   }, [id]);
 
-  const handleConversar = () => {
+  const handleConversar = async () => {
     if (!isAutenticado) {
       navigate('/cadastro');
       return;
     }
-    toast({
-      title: 'Em breve!',
-      description: `O chat com ${prestador?.nome || 'o prestador'} será implementado na próxima etapa.`,
-      status: 'info',
-      duration: 3000,
-      isClosable: true,
-      position: 'top',
-    });
+    if (usuario?.id === Number(id)) {
+      toast({
+        title: 'Atenção',
+        description: 'Você não pode iniciar uma conversa consigo mesmo.',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+        position: 'top',
+      });
+      return;
+    }
+
+    try {
+      await api.post('/chats', {
+        clienteId: usuario.id,
+        prestadorId: Number(id),
+      });
+      navigate('/conversas');
+    } catch (err) {
+      console.error('Erro ao iniciar conversa:', err);
+      navigate('/conversas');
+    }
   };
 
   return (

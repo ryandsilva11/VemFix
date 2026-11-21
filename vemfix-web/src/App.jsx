@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import PerfilPrestador from './pages/PerfilPrestador';
 import PerfilCliente from './pages/PerfilCliente';
 import Suporte from './pages/Suporte';
+import Conversas from './pages/Conversas';
 import { AuthProvider } from './contexts/AuthContext';
 
 function LayoutPrincipal() {
@@ -31,6 +32,7 @@ function App() {
           <Route path="/prestador/:id" element={<PerfilPrestador />} />
           <Route path="/cliente/:id" element={<PerfilCliente />} />
           <Route path="/suporte" element={<Suporte />} />
+          <Route path="/conversas" element={<Conversas />} />
           <Route path="*" element={<LayoutPrincipal />} />
         </Routes>
       </BrowserRouter>
