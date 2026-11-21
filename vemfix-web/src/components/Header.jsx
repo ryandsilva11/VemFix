@@ -8,6 +8,14 @@ export default function Header() {
   const toast = useToast();
   const { isAutenticado, usuario } = useAuth();
 
+  // Extrai iniciais do nome do usuário logado
+  const getIniciais = (nome) => {
+    if (!nome) return '';
+    const partes = nome.trim().split(' ').filter(Boolean);
+    if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+    return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+  };
+
   const handleMinhasConversas = () => {
     if (!isAutenticado) {
       navigate('/cadastro');
@@ -146,13 +154,19 @@ export default function Header() {
             borderRadius="full"
             bg="vemfix.greenLight"
             color="vemfix.green"
+            fontWeight="700"
+            fontSize="14px"
             cursor="pointer"
             onClick={handlePerfil}
             _hover={{ transform: 'scale(1.05)', bg: 'brand.100' }}
             transition="all 0.2s"
             boxShadow="0 1px 3px rgba(0,0,0,0.05)"
           >
-            <Icon as={FaUserCircle} w={6} h={6} />
+            {isAutenticado && usuario?.nome ? (
+              getIniciais(usuario.nome)
+            ) : (
+              <Icon as={FaUserCircle} w={6} h={6} />
+            )}
           </Flex>
         </HStack>
       </Flex>
