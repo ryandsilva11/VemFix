@@ -14,14 +14,19 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { FaUserCircle, FaSearch, FaTimes, FaStar } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
 export default function Header() {
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
   const { isAutenticado, usuario } = useAuth();
+
+  const isInicio = location.pathname === '/';
+  const isConversas = location.pathname.startsWith('/conversas');
+  const isSuporte = location.pathname.startsWith('/suporte');
 
   const [usuarios, setUsuarios] = useState([]);
   const [termoBusca, setTermoBusca] = useState('');
@@ -225,33 +230,34 @@ export default function Header() {
           <HStack spacing={{ base: 4, md: 6 }} display={{ base: 'none', lg: 'flex' }}>
             <Text
               fontSize="14px"
-              fontWeight="600"
-              color="vemfix.green"
+              fontWeight={isInicio ? '700' : '500'}
+              color={isInicio ? 'vemfix.green' : 'vemfix.grayBody'}
               cursor="pointer"
+              _hover={{ color: 'vemfix.green' }}
               onClick={() => navigate('/')}
-              transition="color 0.2s"
+              transition="all 0.2s"
             >
               Início
             </Text>
             <Text
               fontSize="14px"
-              fontWeight="500"
-              color="vemfix.grayBody"
+              fontWeight={isConversas ? '700' : '500'}
+              color={isConversas ? 'vemfix.green' : 'vemfix.grayBody'}
               cursor="pointer"
               _hover={{ color: 'vemfix.green' }}
               onClick={handleMinhasConversas}
-              transition="color 0.2s"
+              transition="all 0.2s"
             >
               Minhas conversas
             </Text>
             <Text
               fontSize="14px"
-              fontWeight="500"
-              color="vemfix.grayBody"
+              fontWeight={isSuporte ? '700' : '500'}
+              color={isSuporte ? 'vemfix.green' : 'vemfix.grayBody'}
               cursor="pointer"
               _hover={{ color: 'vemfix.green' }}
               onClick={() => navigate('/suporte')}
-              transition="color 0.2s"
+              transition="all 0.2s"
             >
               Suporte
             </Text>
