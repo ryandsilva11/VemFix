@@ -250,6 +250,7 @@ export default function Header() {
               color="vemfix.grayBody"
               cursor="pointer"
               _hover={{ color: 'vemfix.green' }}
+              onClick={() => navigate('/suporte')}
               transition="color 0.2s"
             >
               Suporte
