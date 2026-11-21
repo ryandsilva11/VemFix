@@ -1,4 +1,4 @@
-import { Box, Flex, HStack, Text, Icon, Button, useToast } from '@chakra-ui/react';
+import { Box, Flex, HStack, Text, Icon, useToast } from '@chakra-ui/react';
 import { FaUserCircle } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 export default function Header() {
   const navigate = useNavigate();
   const toast = useToast();
-  const { isAutenticado, usuario, logout } = useAuth();
+  const { isAutenticado, usuario } = useAuth();
 
   const handleMinhasConversas = () => {
     if (!isAutenticado) {
@@ -138,27 +138,6 @@ export default function Header() {
 
         {/* Perfil do Usuário */}
         <HStack spacing={3}>
-          {isAutenticado && (
-            <HStack spacing={2}>
-              <Text
-                fontSize="13px"
-                fontWeight="600"
-                color="vemfix.dark"
-                display={{ base: 'none', md: 'block' }}
-              >
-                Olá, {usuario?.nome ? usuario.nome.split(' ')[0] : 'Usuário'}
-              </Text>
-              <Button
-                size="xs"
-                variant="ghost"
-                colorScheme="red"
-                borderRadius="md"
-                onClick={logout}
-              >
-                Sair
-              </Button>
-            </HStack>
-          )}
           <Flex
             align="center"
             justify="center"
