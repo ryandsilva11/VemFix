@@ -23,7 +23,7 @@ export default function PerfilCliente() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const { isAutenticado, usuario } = useAuth();
+  const { isAutenticado, usuario, logout } = useAuth();
 
   const [cliente, setCliente] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -40,6 +40,19 @@ export default function PerfilCliente() {
 
   const handleAlterarDados = () => {
     navigate('/alterar-dados');
+  };
+
+  const handleLogout = () => {
+    logout();
+    toast({
+      title: 'Sessão encerrada',
+      description: 'Você saiu da sua conta com sucesso.',
+      status: 'info',
+      duration: 2500,
+      isClosable: true,
+      position: 'top',
+    });
+    navigate('/');
   };
 
   // Extrai as iniciais do nome
@@ -197,27 +210,45 @@ export default function PerfilCliente() {
                     )}
                   </Box>
 
-                  {/* Botão Alterar dados ao acessar o próprio perfil */}
+                  {/* Botões do próprio perfil: Alterar dados e Sair */}
                   {ehProprioPerfil && (
-                    <Button
-                      onClick={handleAlterarDados}
-                      bg="blue.800"
-                      color="white"
-                      fontSize="15px"
-                      fontWeight="700"
-                      px={5}
-                      py={2}
-                      h="40px"
-                      borderRadius="10px"
-                      border="1.5px solid rgba(255, 255, 255, 0.5)"
-                      boxShadow="0 2px 8px rgba(0, 0, 0, 0.15)"
-                      _hover={{ bg: 'blue.900', transform: 'scale(1.02)' }}
-                      _active={{ bg: 'blue.950' }}
-                      transition="all 0.2s"
-                      flexShrink={0}
-                    >
-                      Alterar dados
-                    </Button>
+                    <VStack spacing={2} align="stretch" flexShrink={0}>
+                      <Button
+                        onClick={handleAlterarDados}
+                        bg="blue.800"
+                        color="white"
+                        fontSize="15px"
+                        fontWeight="700"
+                        px={5}
+                        py={2}
+                        h="40px"
+                        borderRadius="10px"
+                        border="1.5px solid rgba(255, 255, 255, 0.5)"
+                        boxShadow="0 2px 8px rgba(0, 0, 0, 0.15)"
+                        _hover={{ bg: 'blue.900', transform: 'scale(1.02)' }}
+                        _active={{ bg: 'blue.950' }}
+                        transition="all 0.2s"
+                      >
+                        Alterar dados
+                      </Button>
+                      <Button
+                        onClick={handleLogout}
+                        bg="orange.500"
+                        color="white"
+                        fontSize="14px"
+                        fontWeight="700"
+                        px={5}
+                        py={2}
+                        h="36px"
+                        borderRadius="10px"
+                        boxShadow="0 2px 6px rgba(0, 0, 0, 0.1)"
+                        _hover={{ bg: 'orange.600', transform: 'scale(1.02)' }}
+                        _active={{ bg: 'orange.700' }}
+                        transition="all 0.2s"
+                      >
+                        Sair
+                      </Button>
+                    </VStack>
                   )}
                 </Flex>
               </Box>
