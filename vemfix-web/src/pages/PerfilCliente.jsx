@@ -39,14 +39,7 @@ export default function PerfilCliente() {
     Number(usuario?.id) === Number(cliente?.id);
 
   const handleAlterarDados = () => {
-    toast({
-      title: 'Alterar dados',
-      description: 'A tela de alteração de dados será implementada nas próximas etapas.',
-      status: 'info',
-      duration: 3000,
-      isClosable: true,
-      position: 'top',
-    });
+    navigate('/alterar-dados');
   };
 
   // Extrai as iniciais do nome

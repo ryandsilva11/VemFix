@@ -46,10 +46,14 @@ public class PrestadorService {
     public PrestadorResponseDTO alterarDados(PrestadorUpdateDTO dto, Long id) {
         Prestador prestador = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Prestador não encontrado com o ID " + id));
-        prestador.setNome(dto.nome());
+        if (dto.nome() != null && !dto.nome().isBlank()) {
+            prestador.setNome(dto.nome());
+        }
         prestador.setTelefone(dto.telefone());
         prestador.setCidade(dto.cidade());
-        prestador.setSenha(dto.senha());
+        if (dto.senha() != null && !dto.senha().isBlank()) {
+            prestador.setSenha(dto.senha());
+        }
         prestador.setCatServico(dto.catServico());
         prestador.setExp(dto.exp());
         prestador = repository.save(prestador);

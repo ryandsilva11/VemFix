@@ -47,10 +47,14 @@ public class ClienteService {
     public ClienteResponseDTO alterarDados(ClienteUpdateDTO dto, Long id) {
         Cliente cliente = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Cliente não encontrado com o ID " + id));
-        cliente.setNome(dto.nome());
+        if (dto.nome() != null && !dto.nome().isBlank()) {
+            cliente.setNome(dto.nome());
+        }
         cliente.setTelefone(dto.telefone());
         cliente.setCidade(dto.cidade());
-        cliente.setSenha(dto.senha());
+        if (dto.senha() != null && !dto.senha().isBlank()) {
+            cliente.setSenha(dto.senha());
+        }
 
         cliente = repository.save(cliente);
         return new ClienteResponseDTO(cliente);

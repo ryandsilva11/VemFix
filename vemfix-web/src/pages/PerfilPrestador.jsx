@@ -104,14 +104,7 @@ export default function PerfilPrestador() {
   };
 
   const handleAlterarDados = () => {
-    toast({
-      title: 'Alterar dados',
-      description: 'A tela de alteração de dados será implementada nas próximas etapas.',
-      status: 'info',
-      duration: 3000,
-      isClosable: true,
-      position: 'top',
-    });
+    navigate('/alterar-dados');
   };
 
   return (

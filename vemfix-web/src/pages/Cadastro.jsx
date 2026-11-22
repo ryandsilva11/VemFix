@@ -64,6 +64,7 @@ export default function Cadastro() {
   const [tipo, setTipo] = useState('cliente'); // 'cliente' ou 'prestador'
   const [isOutro, setIsOutro] = useState(false);
   const [especialidadeOutro, setEspecialidadeOutro] = useState('');
+  const [termosAceitos, setTermosAceitos] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(null);
@@ -103,6 +104,10 @@ export default function Cadastro() {
   // Envio do formulário de Cliente para POST /clientes
   const handleSubmitCliente = async (e) => {
     e.preventDefault();
+    if (!termosAceitos) {
+      setErro('É necessário concordar com os Termos de Uso e Privacidade para criar uma conta.');
+      return;
+    }
     setLoading(true);
     setErro(null);
 
@@ -130,6 +135,10 @@ export default function Cadastro() {
   // Envio do formulário de Prestador para POST /prestadores
   const handleSubmitPrestador = async (e) => {
     e.preventDefault();
+    if (!termosAceitos) {
+      setErro('É necessário concordar com os Termos de Uso e Privacidade para criar uma conta.');
+      return;
+    }
     setLoading(true);
     setErro(null);
 
@@ -355,7 +364,15 @@ export default function Cadastro() {
                 />
               </FormControl>
 
-              <Checkbox colorScheme="green" defaultChecked fontSize="13px" color="vemfix.grayBody" pt={2} w="100%">
+              <Checkbox
+                isChecked={termosAceitos}
+                onChange={(e) => setTermosAceitos(e.target.checked)}
+                colorScheme="green"
+                fontSize="13px"
+                color="vemfix.grayBody"
+                pt={2}
+                w="100%"
+              >
                 Concordo com os Termos de Uso e Privacidade
               </Checkbox>
 
@@ -367,6 +384,7 @@ export default function Cadastro() {
                 size="lg"
                 mt={2}
                 isLoading={loading}
+                isDisabled={!termosAceitos || loading}
                 _hover={{ bg: 'vemfix.greenDark' }}
               >
                 Criar Conta
@@ -518,7 +536,15 @@ export default function Cadastro() {
                 />
               </FormControl>
 
-              <Checkbox colorScheme="green" defaultChecked fontSize="13px" color="vemfix.grayBody" pt={2} w="100%">
+              <Checkbox
+                isChecked={termosAceitos}
+                onChange={(e) => setTermosAceitos(e.target.checked)}
+                colorScheme="green"
+                fontSize="13px"
+                color="vemfix.grayBody"
+                pt={2}
+                w="100%"
+              >
                 Concordo com os Termos de Uso e Privacidade
               </Checkbox>
 
@@ -530,6 +556,7 @@ export default function Cadastro() {
                 size="lg"
                 mt={2}
                 isLoading={loading}
+                isDisabled={!termosAceitos || loading}
                 _hover={{ bg: 'vemfix.greenDark' }}
               >
                 Criar Conta

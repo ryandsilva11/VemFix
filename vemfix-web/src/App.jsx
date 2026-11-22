@@ -10,6 +10,7 @@ import PerfilCliente from './pages/PerfilCliente';
 import Suporte from './pages/Suporte';
 import Conversas from './pages/Conversas';
 import Chat from './pages/Chat';
+import AlterarDados from './pages/AlterarDados';
 import { AuthProvider } from './contexts/AuthContext';
 
 function LayoutPrincipal() {
@@ -38,6 +39,8 @@ function App() {
           <Route path="/chat/prestador/:prestadorId" element={<Chat />} />
           <Route path="/conversa/:chatId" element={<Chat />} />
           <Route path="/conversa/prestador/:prestadorId" element={<Chat />} />
+          <Route path="/alterar-dados" element={<AlterarDados />} />
+          <Route path="/editar" element={<AlterarDados />} />
           <Route path="*" element={<LayoutPrincipal />} />
         </Routes>
       </BrowserRouter>
