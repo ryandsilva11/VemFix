@@ -24,7 +24,7 @@ export default function PerfilPrestador() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const { isAutenticado } = useAuth();
+  const { isAutenticado, usuario } = useAuth();
 
   const [prestador, setPrestador] = useState(null);
   const [posts, setPosts] = useState([]);
