@@ -73,6 +73,15 @@ export default function PerfilPrestador() {
     }
   }, [id]);
 
+  const isUsuarioPrestador =
+    usuario?.tipo?.toUpperCase() === 'PRESTADOR' || Boolean(usuario?.catServico);
+
+  const ehProprioPerfil =
+    isAutenticado &&
+    isUsuarioPrestador &&
+    prestador?.id &&
+    Number(usuario?.id) === Number(prestador?.id);
+
   const handleConversar = () => {
     if (!isAutenticado) {
       navigate('/cadastro');
@@ -216,25 +225,27 @@ export default function PerfilPrestador() {
                     </Box>
                   </HStack>
 
-                  {/* Botão Conversar (aumentado, sem emoji e sem sobrar folga) */}
-                  <Button
-                    onClick={handleConversar}
-                    bg="white"
-                    color="vemfix.green"
-                    fontSize="15px"
-                    fontWeight="700"
-                    px={5}
-                    py={2}
-                    h="40px"
-                    borderRadius="10px"
-                    boxShadow="0 2px 6px rgba(0, 0, 0, 0.1)"
-                    _hover={{ bg: 'gray.100', transform: 'scale(1.02)' }}
-                    _active={{ bg: 'gray.200' }}
-                    transition="all 0.2s"
-                    flexShrink={0}
-                  >
-                    Conversar
-                  </Button>
+                  {/* Botão Conversar (oculto se o usuário estiver no próprio perfil) */}
+                  {!ehProprioPerfil && (
+                    <Button
+                      onClick={handleConversar}
+                      bg="white"
+                      color="vemfix.green"
+                      fontSize="15px"
+                      fontWeight="700"
+                      px={5}
+                      py={2}
+                      h="40px"
+                      borderRadius="10px"
+                      boxShadow="0 2px 6px rgba(0, 0, 0, 0.1)"
+                      _hover={{ bg: 'gray.100', transform: 'scale(1.02)' }}
+                      _active={{ bg: 'gray.200' }}
+                      transition="all 0.2s"
+                      flexShrink={0}
+                    >
+                      Conversar
+                    </Button>
+                  )}
                 </Flex>
               </Box>
 
