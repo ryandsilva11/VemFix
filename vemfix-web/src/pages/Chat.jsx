@@ -173,6 +173,79 @@ export default function Chat() {
     carregarDados();
   }, [chatId, prestadorId, isAutenticado, usuario, navigate, isPrestador, toast]);
 
+  // Polling em tempo real: busca novas mensagens a cada 2 segundos sem recarregar a tela
+  useEffect(() => {
+    if (!currentChatId) return;
+
+    let ativo = true;
+
+    const buscarNovasMensagens = async () => {
+      try {
+        const resMsg = await api.get(`/mensagens/${currentChatId}`);
+        if (!ativo) return;
+
+        const msgs = resMsg.data || [];
+        setMensagens((prevMsgs) => {
+          if (msgs.length !== prevMsgs.length) {
+            return msgs.map((m) => ({
+              id: m.id,
+              remetenteTipo: m.remetenteTipo,
+              conteudo: m.conteudo,
+              horario: formatarHorario(m.dataEnvio),
+            }));
+          }
+          return prevMsgs;
+        });
+      } catch {
+        // Silencioso durante o polling em segundo plano
+      }
+    };
+
+    const interval = setInterval(buscarNovasMensagens, 2000);
+
+    return () => {
+      ativo = false;
+      clearInterval(interval);
+    };
+  }, [currentChatId]);
+
+  // Caso esteja na tela de um prestador antes de enviar a 1ª mensagem,
+  // detecta se o prestador respondeu ou iniciou o chat
+  useEffect(() => {
+    if (currentChatId || !prestadorId || !usuario?.id) return;
+
+    let ativo = true;
+
+    const checarSeChatFoiCriado = async () => {
+      try {
+        const endpoint = isPrestador
+          ? `/chats/prestador/${usuario.id}`
+          : `/chats/cliente/${usuario.id}`;
+        const resChats = await api.get(endpoint);
+        if (!ativo) return;
+
+        const chatExistente = (resChats.data || []).find(
+          (c) =>
+            (isPrestador && c.clienteId === Number(prestadorId)) ||
+            (!isPrestador && c.prestadorId === Number(prestadorId))
+        );
+
+        if (chatExistente) {
+          setCurrentChatId(chatExistente.id);
+        }
+      } catch {
+        // Silencioso
+      }
+    };
+
+    const interval = setInterval(checarSeChatFoiCriado, 2500);
+
+    return () => {
+      ativo = false;
+      clearInterval(interval);
+    };
+  }, [currentChatId, prestadorId, usuario, isPrestador]);
+
   // Envio de nova mensagem
   const handleEnviarMensagem = async (e) => {
     if (e) e.preventDefault();

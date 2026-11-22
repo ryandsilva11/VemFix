@@ -58,14 +58,21 @@ export default function Conversas() {
   };
 
   useEffect(() => {
-    async function carregarConversas() {
+    let ativo = true;
+
+    async function carregarConversas(mostrarSpinner = true) {
       if (!isAutenticado || !usuario?.id) {
-        setConversas([]);
-        setCarregando(false);
+        if (ativo) {
+          setConversas([]);
+          setCarregando(false);
+        }
         return;
       }
 
-      setCarregando(true);
+      if (mostrarSpinner) {
+        setCarregando(true);
+      }
+
       try {
         const isPrestador =
           usuario?.tipo?.toUpperCase() === 'PRESTADOR' || Boolean(usuario?.catServico);
@@ -78,9 +85,11 @@ export default function Conversas() {
         const resChats = await api.get(endpoint).catch(() => ({ data: [] }));
         const listaChats = resChats.data || [];
 
+        if (!ativo) return;
+
         if (listaChats.length === 0) {
           setConversas([]);
-          setCarregando(false);
+          if (mostrarSpinner) setCarregando(false);
           return;
         }
 
@@ -130,18 +139,33 @@ export default function Conversas() {
           })
         );
 
+        if (!ativo) return;
+
         // Regra: Só exibe na lista conversas que possuem pelo menos uma mensagem enviada/recebida
         const conversasComMensagens = conversasFormatadas.filter((c) => c.temMensagens);
         setConversas(conversasComMensagens);
       } catch (err) {
         console.error('Erro ao carregar conversas:', err);
-        setConversas([]);
+        if (ativo) setConversas([]);
       } finally {
-        setCarregando(false);
+        if (ativo && mostrarSpinner) {
+          setCarregando(false);
+        }
       }
     }
 
-    carregarConversas();
+    // Carregamento inicial com indicador
+    carregarConversas(true);
+
+    // Polling silencioso em tempo real a cada 3.5 segundos
+    const interval = setInterval(() => {
+      carregarConversas(false);
+    }, 3500);
+
+    return () => {
+      ativo = false;
+      clearInterval(interval);
+    };
   }, [isAutenticado, usuario]);
 
   return (
