@@ -73,7 +73,7 @@ export default function PerfilPrestador() {
     }
   }, [id]);
 
-  const handleConversar = async () => {
+  const handleConversar = () => {
     if (!isAutenticado) {
       navigate('/cadastro');
       return;
@@ -90,16 +90,8 @@ export default function PerfilPrestador() {
       return;
     }
 
-    try {
-      await api.post('/chats', {
-        clienteId: usuario.id,
-        prestadorId: Number(id),
-      });
-      navigate('/conversas');
-    } catch (err) {
-      console.error('Erro ao iniciar conversa:', err);
-      navigate('/conversas');
-    }
+    // Abre a conversa com o prestador selecionado sem criar chat no banco antes do envio de mensagem
+    navigate(`/chat/prestador/${id}`);
   };
 
   return (

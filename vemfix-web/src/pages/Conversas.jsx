@@ -101,15 +101,17 @@ export default function Conversas() {
               }
             }
 
-            let ultimaMensagemTexto = 'Conversa iniciada';
-            let horario = formatarHorario(chat.ultimaMensagem || chat.dataCriacao);
+            let temMensagens = false;
+            let ultimaMensagemTexto = '';
+            let horario = '';
 
             try {
               const resMsg = await api.get(`/mensagens/${chat.id}`);
               const mensagens = resMsg.data || [];
               if (mensagens.length > 0) {
+                temMensagens = true;
                 const ultimaMsg = mensagens[mensagens.length - 1];
-                ultimaMensagemTexto = ultimaMsg.conteudo || ultimaMensagemTexto;
+                ultimaMensagemTexto = ultimaMsg.conteudo || '';
                 horario = formatarHorario(ultimaMsg.dataEnvio);
               }
             } catch {
@@ -123,11 +125,14 @@ export default function Conversas() {
               catServico,
               ultimaMensagemTexto,
               horario,
+              temMensagens,
             };
           })
         );
 
-        setConversas(conversasFormatadas);
+        // Regra: Só exibe na lista conversas que possuem pelo menos uma mensagem enviada/recebida
+        const conversasComMensagens = conversasFormatadas.filter((c) => c.temMensagens);
+        setConversas(conversasComMensagens);
       } catch (err) {
         console.error('Erro ao carregar conversas:', err);
         setConversas([]);
