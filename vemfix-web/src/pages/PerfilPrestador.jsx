@@ -98,6 +98,18 @@ export default function PerfilPrestador() {
       });
       return;
     }
+    if (isUsuarioPrestador) {
+      toast({
+        title: 'Atenção',
+        description:
+          'Você está conectado como Prestador. No VemFix, conversas para solicitação de serviços são iniciadas exclusivamente por contas de Cliente.',
+        status: 'info',
+        duration: 4000,
+        isClosable: true,
+        position: 'top',
+      });
+      return;
+    }
 
     // Abre a conversa com o prestador selecionado sem criar chat no banco antes do envio de mensagem
     navigate(`/chat/prestador/${id}`);

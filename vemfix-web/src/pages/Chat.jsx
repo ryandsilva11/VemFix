@@ -114,6 +114,20 @@ export default function Chat() {
           setMensagens(msgsFormatadas);
         } else if (prestadorId) {
           // Caso 2: Clicou em "Conversar" no perfil do prestador
+          if (isPrestador) {
+            toast({
+              title: 'Conversa indisponível',
+              description:
+                'No VemFix, conversas para solicitação de serviços ocorrem exclusivamente entre um Cliente e um Prestador.',
+              status: 'warning',
+              duration: 4000,
+              isClosable: true,
+              position: 'top',
+            });
+            navigate(-1);
+            return;
+          }
+
           // 1. Busca dados do prestador
           const resP = await api.get(`/prestadores/${prestadorId}`);
           const dadosPrestador = resP.data;
@@ -258,8 +272,20 @@ export default function Chat() {
 
       // Se a conversa ainda não foi criada no banco, cria agora na primeira mensagem!
       if (!idChatAtual) {
-        const clienteId = isPrestador ? outroUsuario.id : usuario.id;
-        const pId = isPrestador ? usuario.id : outroUsuario.id;
+        if (isPrestador) {
+          toast({
+            title: 'Ação não permitida',
+            description:
+              'Apenas clientes podem iniciar conversas com prestadores de serviço.',
+            status: 'warning',
+            duration: 3000,
+            isClosable: true,
+          });
+          return;
+        }
+
+        const clienteId = usuario.id;
+        const pId = outroUsuario.id;
 
         const resChat = await api.post('/chats', {
           clienteId,
