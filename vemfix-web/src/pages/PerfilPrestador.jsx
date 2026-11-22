@@ -103,6 +103,17 @@ export default function PerfilPrestador() {
     navigate(`/chat/prestador/${id}`);
   };
 
+  const handleAlterarDados = () => {
+    toast({
+      title: 'Alterar dados',
+      description: 'A tela de alteração de dados será implementada nas próximas etapas.',
+      status: 'info',
+      duration: 3000,
+      isClosable: true,
+      position: 'top',
+    });
+  };
+
   return (
     <Flex direction="column" minH="100vh" bg="vemfix.pageBg">
       <Header />
@@ -225,8 +236,8 @@ export default function PerfilPrestador() {
                     </Box>
                   </HStack>
 
-                  {/* Botão Conversar (oculto se o usuário estiver no próprio perfil) */}
-                  {!ehProprioPerfil && (
+                  {/* Botão Conversar (para outros usuários) ou Alterar dados (ao acessar o próprio perfil) */}
+                  {!ehProprioPerfil ? (
                     <Button
                       onClick={handleConversar}
                       bg="white"
@@ -244,6 +255,26 @@ export default function PerfilPrestador() {
                       flexShrink={0}
                     >
                       Conversar
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleAlterarDados}
+                      bg="brand.700"
+                      color="white"
+                      fontSize="15px"
+                      fontWeight="700"
+                      px={5}
+                      py={2}
+                      h="40px"
+                      borderRadius="10px"
+                      border="1.5px solid rgba(255, 255, 255, 0.5)"
+                      boxShadow="0 2px 8px rgba(0, 0, 0, 0.15)"
+                      _hover={{ bg: 'brand.800', transform: 'scale(1.02)' }}
+                      _active={{ bg: 'brand.900' }}
+                      transition="all 0.2s"
+                      flexShrink={0}
+                    >
+                      Alterar dados
                     </Button>
                   )}
                 </Flex>

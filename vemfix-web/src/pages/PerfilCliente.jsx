@@ -11,19 +11,43 @@ import {
   Badge,
   Button,
   Spinner,
+  useToast,
 } from '@chakra-ui/react';
 import { FaArrowLeft } from 'react-icons/fa';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
 export default function PerfilCliente() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
+  const { isAutenticado, usuario } = useAuth();
 
   const [cliente, setCliente] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
+
+  const isUsuarioCliente =
+    usuario?.tipo?.toUpperCase() === 'CLIENTE' || (!usuario?.catServico && Boolean(usuario?.id));
+
+  const ehProprioPerfil =
+    isAutenticado &&
+    isUsuarioCliente &&
+    cliente?.id &&
+    Number(usuario?.id) === Number(cliente?.id);
+
+  const handleAlterarDados = () => {
+    toast({
+      title: 'Alterar dados',
+      description: 'A tela de alteração de dados será implementada nas próximas etapas.',
+      status: 'info',
+      duration: 3000,
+      isClosable: true,
+      position: 'top',
+    });
+  };
 
   // Extrai as iniciais do nome
   const getIniciais = (nome) => {
@@ -179,6 +203,29 @@ export default function PerfilCliente() {
                       </Text>
                     )}
                   </Box>
+
+                  {/* Botão Alterar dados ao acessar o próprio perfil */}
+                  {ehProprioPerfil && (
+                    <Button
+                      onClick={handleAlterarDados}
+                      bg="blue.800"
+                      color="white"
+                      fontSize="15px"
+                      fontWeight="700"
+                      px={5}
+                      py={2}
+                      h="40px"
+                      borderRadius="10px"
+                      border="1.5px solid rgba(255, 255, 255, 0.5)"
+                      boxShadow="0 2px 8px rgba(0, 0, 0, 0.15)"
+                      _hover={{ bg: 'blue.900', transform: 'scale(1.02)' }}
+                      _active={{ bg: 'blue.950' }}
+                      transition="all 0.2s"
+                      flexShrink={0}
+                    >
+                      Alterar dados
+                    </Button>
+                  )}
                 </Flex>
               </Box>
 
