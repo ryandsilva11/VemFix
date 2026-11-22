@@ -21,7 +21,11 @@ public record OrcamentoResponseDTO(
         this(
                 o.getId(),
                 o.getChat().getId(),
-                o.getChat().getCliente().getNome(),
+                o.getChat().getCliente() != null
+                        ? o.getChat().getCliente().getNome()
+                        : (o.getChat().getPrestadorSolicitante() != null
+                                ? o.getChat().getPrestadorSolicitante().getNome()
+                                : "Cliente"),
                 o.getChat().getPrestador().getNome(),
                 o.getTitulo(),
                 o.getValor(),

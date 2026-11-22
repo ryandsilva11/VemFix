@@ -87,24 +87,12 @@ export default function PerfilPrestador() {
       navigate('/cadastro');
       return;
     }
-    if (usuario?.id === Number(id)) {
+    if (isUsuarioPrestador && usuario?.id === Number(id)) {
       toast({
         title: 'Atenção',
         description: 'Você não pode iniciar uma conversa consigo mesmo.',
         status: 'warning',
         duration: 3000,
-        isClosable: true,
-        position: 'top',
-      });
-      return;
-    }
-    if (isUsuarioPrestador) {
-      toast({
-        title: 'Atenção',
-        description:
-          'Você está conectado como Prestador. No VemFix, conversas para solicitação de serviços são iniciadas exclusivamente por contas de Cliente.',
-        status: 'info',
-        duration: 4000,
         isClosable: true,
         position: 'top',
       });

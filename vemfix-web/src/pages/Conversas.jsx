@@ -96,17 +96,33 @@ export default function Conversas() {
         // Para cada conversa, busca as mensagens para obter a última mensagem real
         const conversasFormatadas = await Promise.all(
           listaChats.map(async (chat) => {
-            const outroUsuarioTipo = isPrestador ? 'cliente' : 'prestador';
-            const outroUsuarioNome = isPrestador ? chat.clienteNome : chat.prestadorNome;
-            let catServico = chat.prestadorCatServico || '';
+            let outroUsuarioNome = '';
+            let outroUsuarioTipo = 'cliente';
+            let catServico = '';
 
-            // Se for cliente visualizando e faltou a categoria no chat, tenta carregar do prestador
-            if (!isPrestador && !catServico && chat.prestadorId) {
-              try {
-                const resP = await api.get(`/prestadores/${chat.prestadorId}`);
-                catServico = resP.data?.catServico || '';
-              } catch {
-                catServico = '';
+            if (!isPrestador) {
+              // Usuário logado é Cliente comum
+              outroUsuarioNome = chat.prestadorNome;
+              outroUsuarioTipo = 'prestador';
+              catServico = chat.prestadorCatServico || '';
+            } else {
+              // Usuário logado é Prestador
+              if (chat.prestadorId === usuario.id) {
+                // Eu sou o prestador contratado neste chat
+                if (chat.solicitanteTipo === 'PRESTADOR') {
+                  outroUsuarioNome = chat.prestadorSolicitanteNome || chat.clienteNome;
+                  outroUsuarioTipo = 'prestador';
+                  catServico = chat.prestadorSolicitanteCatServico || '';
+                } else {
+                  outroUsuarioNome = chat.clienteNome;
+                  outroUsuarioTipo = 'cliente';
+                  catServico = '';
+                }
+              } else {
+                // Eu sou o solicitante (contratei outro prestador)
+                outroUsuarioNome = chat.prestadorNome;
+                outroUsuarioTipo = 'prestador';
+                catServico = chat.prestadorCatServico || '';
               }
             }
 

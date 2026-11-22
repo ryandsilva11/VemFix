@@ -22,6 +22,7 @@ export default function Chat() {
   const toast = useToast();
 
   const [outroUsuario, setOutroUsuario] = useState(null);
+  const [chatDados, setChatDados] = useState(null);
   const [currentChatId, setCurrentChatId] = useState(chatId || null);
   const [mensagens, setMensagens] = useState([]);
   const [novaMensagem, setNovaMensagem] = useState('');
@@ -32,6 +33,9 @@ export default function Chat() {
 
   const isPrestador =
     usuario?.tipo?.toUpperCase() === 'PRESTADOR' || Boolean(usuario?.catServico);
+
+  // Define se o usuário atual é o prestador contratado/procurado nesta conversa específica
+  const souPrestadorDoChat = chatDados ? usuario?.id === chatDados.prestadorId : false;
 
   // Extrai as duas iniciais do nome
   const getIniciais = (nome) => {
@@ -80,20 +84,30 @@ export default function Chat() {
           setCurrentChatId(chatId);
           const resChat = await api.get(`/chats/${chatId}`);
           const chat = resChat.data;
+          setChatDados(chat);
 
-          const souCliente = usuario.id === chat.clienteId;
-          const outroId = souCliente ? chat.prestadorId : chat.clienteId;
-          const outroNome = souCliente ? chat.prestadorNome : chat.clienteNome;
-          const outroTipo = souCliente ? 'prestador' : 'cliente';
-          let catServico = chat.prestadorCatServico || '';
+          const euSouPrestador = usuario.id === chat.prestadorId;
+          let outroId, outroNome, outroTipo, catServico;
 
-          if (souCliente && !catServico && outroId) {
-            try {
-              const resP = await api.get(`/prestadores/${outroId}`);
-              catServico = resP.data?.catServico || '';
-            } catch {
+          if (euSouPrestador) {
+            // Eu sou o prestador contratado; o outro usuário é quem solicitou o serviço
+            if (chat.solicitanteTipo === 'PRESTADOR') {
+              outroId = chat.prestadorSolicitanteId;
+              outroNome = chat.prestadorSolicitanteNome || chat.clienteNome;
+              outroTipo = 'prestador';
+              catServico = chat.prestadorSolicitanteCatServico || '';
+            } else {
+              outroId = chat.clienteId;
+              outroNome = chat.clienteNome;
+              outroTipo = 'cliente';
               catServico = '';
             }
+          } else {
+            // Eu sou o solicitante (seja cliente ou prestador solicitante)
+            outroId = chat.prestadorId;
+            outroNome = chat.prestadorNome;
+            outroTipo = 'prestador';
+            catServico = chat.prestadorCatServico || '';
           }
 
           setOutroUsuario({
@@ -113,22 +127,8 @@ export default function Chat() {
           }));
           setMensagens(msgsFormatadas);
         } else if (prestadorId) {
-          // Caso 2: Clicou em "Conversar" no perfil do prestador
-          if (isPrestador) {
-            toast({
-              title: 'Conversa indisponível',
-              description:
-                'No VemFix, conversas para solicitação de serviços ocorrem exclusivamente entre um Cliente e um Prestador.',
-              status: 'warning',
-              duration: 4000,
-              isClosable: true,
-              position: 'top',
-            });
-            navigate(-1);
-            return;
-          }
-
-          // 1. Busca dados do prestador
+          // Caso 2: Clicou em "Conversar" no perfil de um prestador
+          // 1. Busca dados do prestador procurado
           const resP = await api.get(`/prestadores/${prestadorId}`);
           const dadosPrestador = resP.data;
 
@@ -139,17 +139,27 @@ export default function Chat() {
             catServico: dadosPrestador.catServico || '',
           });
 
-          // 2. Verifica se JÁ existe conversa entre o cliente atual e este prestador
+          // 2. Verifica se JÁ existe conversa entre este usuário e este prestador
           try {
             const endpoint = isPrestador
               ? `/chats/prestador/${usuario.id}`
               : `/chats/cliente/${usuario.id}`;
             const resChats = await api.get(endpoint);
-            const chatExistente = (resChats.data || []).find(
-              (c) => c.prestadorId === Number(prestadorId)
-            );
+            const chatExistente = (resChats.data || []).find((c) => {
+              if (isPrestador) {
+                return (
+                  c.prestadorSolicitanteId === usuario.id &&
+                  c.prestadorId === Number(prestadorId)
+                );
+              }
+              return (
+                c.clienteId === usuario.id &&
+                c.prestadorId === Number(prestadorId)
+              );
+            });
 
             if (chatExistente) {
+              setChatDados(chatExistente);
               setCurrentChatId(chatExistente.id);
               const resMsg = await api.get(`/mensagens/${chatExistente.id}`);
               const msgsFormatadas = (resMsg.data || []).map((m) => ({
@@ -160,12 +170,12 @@ export default function Chat() {
               }));
               setMensagens(msgsFormatadas);
             } else {
-              // Não existe chat ainda: NÃO cria no banco agora!
-              // Só criará quando o usuário enviar a primeira mensagem.
+              setChatDados(null);
               setCurrentChatId(null);
               setMensagens([]);
             }
           } catch {
+            setChatDados(null);
             setCurrentChatId(null);
             setMensagens([]);
           }
@@ -224,7 +234,7 @@ export default function Chat() {
   }, [currentChatId]);
 
   // Caso esteja na tela de um prestador antes de enviar a 1ª mensagem,
-  // detecta se o prestador respondeu ou iniciou o chat
+  // detecta se o chat foi criado por outra ação/aba
   useEffect(() => {
     if (currentChatId || !prestadorId || !usuario?.id) return;
 
@@ -238,13 +248,21 @@ export default function Chat() {
         const resChats = await api.get(endpoint);
         if (!ativo) return;
 
-        const chatExistente = (resChats.data || []).find(
-          (c) =>
-            (isPrestador && c.clienteId === Number(prestadorId)) ||
-            (!isPrestador && c.prestadorId === Number(prestadorId))
-        );
+        const chatExistente = (resChats.data || []).find((c) => {
+          if (isPrestador) {
+            return (
+              c.prestadorSolicitanteId === usuario.id &&
+              c.prestadorId === Number(prestadorId)
+            );
+          }
+          return (
+            c.clienteId === usuario.id &&
+            c.prestadorId === Number(prestadorId)
+          );
+        });
 
         if (chatExistente) {
+          setChatDados(chatExistente);
           setCurrentChatId(chatExistente.id);
         }
       } catch {
@@ -269,34 +287,38 @@ export default function Chat() {
     setEnviando(true);
     try {
       let idChatAtual = currentChatId;
+      let dadosDoChat = chatDados;
 
       // Se a conversa ainda não foi criada no banco, cria agora na primeira mensagem!
       if (!idChatAtual) {
+        let payload = {};
         if (isPrestador) {
-          toast({
-            title: 'Ação não permitida',
-            description:
-              'Apenas clientes podem iniciar conversas com prestadores de serviço.',
-            status: 'warning',
-            duration: 3000,
-            isClosable: true,
-          });
-          return;
+          payload = {
+            prestadorSolicitanteId: usuario.id,
+            prestadorId: outroUsuario.id,
+          };
+        } else {
+          payload = {
+            clienteId: usuario.id,
+            prestadorId: outroUsuario.id,
+          };
         }
 
-        const clienteId = usuario.id;
-        const pId = outroUsuario.id;
-
-        const resChat = await api.post('/chats', {
-          clienteId,
-          prestadorId: pId,
-        });
+        const resChat = await api.post('/chats', payload);
+        dadosDoChat = resChat.data;
         idChatAtual = resChat.data.id;
+        setChatDados(dadosDoChat);
         setCurrentChatId(idChatAtual);
       }
 
-      // Envia a mensagem no chat
-      const remetenteTipo = isPrestador ? 'PRESTADOR' : 'CLIENTE';
+      // Regra de Ouro:
+      // Quem foi procurado é tratado como PRESTADOR na conversa.
+      // Quem iniciou a conversa é tratado como CLIENTE na conversa.
+      // Se sou o prestador contratado (usuario.id === dadosDoChat.prestadorId), remetenteTipo = 'PRESTADOR'.
+      // Caso contrário (sou o cliente ou o prestador solicitante), remetenteTipo = 'CLIENTE'.
+      const souPrestadorNesteChat = dadosDoChat ? usuario.id === dadosDoChat.prestadorId : false;
+      const remetenteTipo = souPrestadorNesteChat ? 'PRESTADOR' : 'CLIENTE';
+
       const resMsg = await api.post(`/mensagens/${idChatAtual}`, {
         remetenteTipo,
         conteudo: texto,
@@ -447,9 +469,9 @@ export default function Chat() {
               </Flex>
             ) : (
               mensagens.map((msg, index) => {
-                const ehMinha =
-                  (isPrestador && msg.remetenteTipo?.toUpperCase() === 'PRESTADOR') ||
-                  (!isPrestador && msg.remetenteTipo?.toUpperCase() === 'CLIENTE');
+                const ehMinha = souPrestadorDoChat
+                  ? msg.remetenteTipo?.toUpperCase() === 'PRESTADOR'
+                  : msg.remetenteTipo?.toUpperCase() === 'CLIENTE';
 
                 return (
                   <Box
@@ -543,26 +565,29 @@ export default function Chat() {
               }
             />
 
-            <IconButton
-              aria-label="Orçamento"
-              icon={<FaDollarSign size={14} />}
-              variant="ghost"
-              borderRadius="full"
-              w="36px"
-              h="36px"
-              minW="36px"
-              color="gray.500"
-              _hover={{ bg: 'gray.100', color: 'vemfix.green' }}
-              onClick={() =>
-                toast({
-                  title: 'Orçamento',
-                  description: 'Funcionalidade de orçamento estará disponível em breve.',
-                  status: 'info',
-                  duration: 2500,
-                  isClosable: true,
-                })
-              }
-            />
+            {/* O botão de enviar orçamento só aparece para o Prestador prestador do serviço nesta conversa */}
+            {souPrestadorDoChat && (
+              <IconButton
+                aria-label="Orçamento"
+                icon={<FaDollarSign size={14} />}
+                variant="ghost"
+                borderRadius="full"
+                w="36px"
+                h="36px"
+                minW="36px"
+                color="gray.500"
+                _hover={{ bg: 'gray.100', color: 'vemfix.green' }}
+                onClick={() =>
+                  toast({
+                    title: 'Orçamento',
+                    description: 'Funcionalidade de orçamento estará disponível em breve.',
+                    status: 'info',
+                    duration: 2500,
+                    isClosable: true,
+                  })
+                }
+              />
+            )}
 
             <IconButton
               aria-label="Enviar"

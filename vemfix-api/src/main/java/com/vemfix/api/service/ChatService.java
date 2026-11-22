@@ -33,7 +33,29 @@ public class ChatService {
 
     @Transactional
     public ChatResponseDTO iniciarOuBuscarChat(ChatRequestDTO dto) {
-        // Regra de Ouro: Se já existe chat entre esse cliente e esse prestador, reaproveita!
+        // Caso 1: Prestador solicitando serviço de outro Prestador
+        if (dto.prestadorSolicitanteId() != null) {
+            if (dto.prestadorSolicitanteId().equals(dto.prestadorId())) {
+                throw new RuntimeException("Um prestador não pode iniciar uma conversa consigo mesmo.");
+            }
+
+            Optional<Chat> chatExistente = chatRepository.findByPrestadorSolicitanteIdAndPrestadorId(
+                    dto.prestadorSolicitanteId(), dto.prestadorId());
+            if (chatExistente.isPresent()) {
+                return new ChatResponseDTO(chatExistente.get());
+            }
+
+            Prestador solicitante = prestadorRepository.findById(dto.prestadorSolicitanteId())
+                    .orElseThrow(() -> new RuntimeException("Prestador solicitante não encontrado com o ID: " + dto.prestadorSolicitanteId()));
+
+            Prestador prestador = prestadorRepository.findById(dto.prestadorId())
+                    .orElseThrow(() -> new RuntimeException("Prestador não encontrado com o ID: " + dto.prestadorId()));
+
+            Chat novoChat = new Chat(solicitante, prestador);
+            return new ChatResponseDTO(chatRepository.save(novoChat));
+        }
+
+        // Caso 2: Cliente solicitando serviço de um Prestador
         Optional<Chat> chatExistente = chatRepository.findByClienteIdAndPrestadorId(dto.clienteId(), dto.prestadorId());
         if (chatExistente.isPresent()) {
             return new ChatResponseDTO(chatExistente.get());

@@ -20,8 +20,12 @@ public class Chat {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "cliente_id", nullable = false)
+    @JoinColumn(name = "cliente_id", nullable = true)
     private Cliente cliente;
+
+    @ManyToOne
+    @JoinColumn(name = "prestador_solicitante_id", nullable = true)
+    private Prestador prestadorSolicitante;
 
     @ManyToOne
     @JoinColumn(name = "prestador_id", nullable = false)
@@ -43,6 +47,13 @@ public class Chat {
         this.ultimaMensagem = LocalDateTime.now();
     }
 
+    public Chat(Prestador prestadorSolicitante, Prestador prestador) {
+        this.prestadorSolicitante = prestadorSolicitante;
+        this.prestador = prestador;
+        this.dataCriacao = LocalDateTime.now();
+        this.ultimaMensagem = LocalDateTime.now();
+    }
+
     public Long getId() {
         return id;
     }
@@ -57,6 +68,14 @@ public class Chat {
 
     public void setCliente(Cliente cliente) {
         this.cliente = cliente;
+    }
+
+    public Prestador getPrestadorSolicitante() {
+        return prestadorSolicitante;
+    }
+
+    public void setPrestadorSolicitante(Prestador prestadorSolicitante) {
+        this.prestadorSolicitante = prestadorSolicitante;
     }
 
     public Prestador getPrestador() {

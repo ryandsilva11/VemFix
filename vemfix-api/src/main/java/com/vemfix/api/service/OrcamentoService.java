@@ -52,7 +52,7 @@ public class OrcamentoService {
 
     @Transactional(readOnly = true)
     public List<OrcamentoResponseDTO> listarPorCliente(Long clienteId) {
-        return orcamentoRepository.findByChatClienteIdOrderByDataHoraDesc(clienteId).stream()
+        return orcamentoRepository.findOrcamentosRecebidosPorUsuario(clienteId).stream()
                 .map(OrcamentoResponseDTO::new)
                 .toList();
     }
