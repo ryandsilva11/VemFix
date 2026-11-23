@@ -60,10 +60,26 @@ export default function Chat() {
     return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
   };
 
+  // Extrai timestamp em milissegundos de string ou array
+  const extrairTimestamp = (dataValor) => {
+    if (!dataValor) return 0;
+    if (Array.isArray(dataValor)) {
+      const [ano, mes, dia, hora = 0, min = 0, seg = 0] = dataValor;
+      return new Date(ano, mes - 1, dia, hora, min, seg).getTime();
+    }
+    const t = new Date(dataValor).getTime();
+    return isNaN(t) ? 0 : t;
+  };
+
   // Formata hora no padrão HH:mm
   const formatarHorario = (dataStr) => {
     if (!dataStr) return '';
     try {
+      if (Array.isArray(dataStr)) {
+        const hora = (dataStr[3] || 0).toString().padStart(2, '0');
+        const min = (dataStr[4] || 0).toString().padStart(2, '0');
+        return `${hora}:${min}`;
+      }
       const data = new Date(dataStr);
       if (isNaN(data.getTime())) return '';
       const hora = data.getHours().toString().padStart(2, '0');
@@ -385,8 +401,11 @@ export default function Chat() {
     const resOrc = await api.post('/orcamentos', payload);
     const novoOrcamento = resOrc.data;
 
-    // Atualiza a lista de orçamentos imediatamente
-    setOrcamentos((prev) => [novoOrcamento, ...prev]);
+    // Atualiza a lista de orçamentos imediatamente (garante que orcamentos[0] seja o mais recente)
+    setOrcamentos((prev) => {
+      const semDuplicata = prev.filter((o) => o.id !== novoOrcamento.id);
+      return [novoOrcamento, ...semDuplicata];
+    });
 
     // Envia uma mensagem no chat registrando a emissão formal do orçamento
     const valorFmt = Number(dadosOrcamento.valor).toLocaleString('pt-BR', {
@@ -422,16 +441,23 @@ export default function Chat() {
     ...mensagens.map((m) => ({
       tipoItem: 'MENSAGEM',
       id: `msg-${m.id}`,
-      timestamp: new Date(m.dataEnvio || 0).getTime(),
+      timestamp: extrairTimestamp(m.dataEnvio),
       dados: m,
     })),
     ...orcamentos.map((o) => ({
       tipoItem: 'ORCAMENTO',
       id: `orc-${o.id}`,
-      timestamp: new Date(o.dataHora || 0).getTime(),
+      timestamp: extrairTimestamp(o.dataHora),
       dados: o,
     })),
-  ].sort((a, b) => a.timestamp - b.timestamp);
+  ].sort((a, b) => {
+    if (a.timestamp !== b.timestamp) {
+      return a.timestamp - b.timestamp;
+    }
+    const idA = typeof a.dados.id === 'number' ? a.dados.id : 0;
+    const idB = typeof b.dados.id === 'number' ? b.dados.id : 0;
+    return idA - idB;
+  });
 
   // Nome e CEP do cliente para pré-preenchimento no modal
   const clienteNomePreenchimento = souPrestadorDoChat

@@ -12,16 +12,19 @@ import com.vemfix.api.model.Orcamento;
 @Repository
 public interface OrcamentoRepository extends JpaRepository<Orcamento, Long> {
 
-    // Lista os orçamentos de um chat específico (mais recentes primeiro)
-    List<Orcamento> findByChatIdOrderByDataHoraDesc(Long chatId);
+    // Lista os orçamentos de um chat específico (mais recentes primeiro, desempata pelo ID)
+    @Query("SELECT o FROM Orcamento o WHERE o.chat.id = :chatId ORDER BY o.dataHora DESC, o.id DESC")
+    List<Orcamento> findByChatIdOrderByDataHoraDesc(@Param("chatId") Long chatId);
 
     // Lista todos os orçamentos recebidos por um solicitante (seja cliente ou prestador solicitante)
-    @Query("SELECT o FROM Orcamento o WHERE (o.chat.cliente IS NOT NULL AND o.chat.cliente.id = :usuarioId) OR (o.chat.prestadorSolicitante IS NOT NULL AND o.chat.prestadorSolicitante.id = :usuarioId) ORDER BY o.dataHora DESC")
+    @Query("SELECT o FROM Orcamento o WHERE (o.chat.cliente IS NOT NULL AND o.chat.cliente.id = :usuarioId) OR (o.chat.prestadorSolicitante IS NOT NULL AND o.chat.prestadorSolicitante.id = :usuarioId) ORDER BY o.dataHora DESC, o.id DESC")
     List<Orcamento> findOrcamentosRecebidosPorUsuario(@Param("usuarioId") Long usuarioId);
 
     // Lista todos os orçamentos recebidos por um cliente
-    List<Orcamento> findByChatClienteIdOrderByDataHoraDesc(Long clienteId);
+    @Query("SELECT o FROM Orcamento o WHERE o.chat.cliente.id = :clienteId ORDER BY o.dataHora DESC, o.id DESC")
+    List<Orcamento> findByChatClienteIdOrderByDataHoraDesc(@Param("clienteId") Long clienteId);
 
     // Lista todos os orçamentos emitidos por um prestador
-    List<Orcamento> findByChatPrestadorIdOrderByDataHoraDesc(Long prestadorId);
+    @Query("SELECT o FROM Orcamento o WHERE o.chat.prestador.id = :prestadorId ORDER BY o.dataHora DESC, o.id DESC")
+    List<Orcamento> findByChatPrestadorIdOrderByDataHoraDesc(@Param("prestadorId") Long prestadorId);
 }

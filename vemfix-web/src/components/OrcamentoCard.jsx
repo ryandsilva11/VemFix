@@ -15,9 +15,19 @@ import { baixarOrcamentoPDF } from '../utils/orcamentoPdf';
 export default function OrcamentoCard({ orcamento, onExpand }) {
   if (!orcamento) return null;
 
-  const dataFormatada = orcamento.dataHora
-    ? new Date(orcamento.dataHora).toLocaleDateString('pt-BR')
-    : new Date().toLocaleDateString('pt-BR');
+  const formatarData = (d) => {
+    if (!d) return new Date().toLocaleDateString('pt-BR');
+    if (Array.isArray(d)) {
+      const [ano, mes, dia] = d;
+      return new Date(ano, mes - 1, dia).toLocaleDateString('pt-BR');
+    }
+    const data = new Date(d);
+    return isNaN(data.getTime())
+      ? new Date().toLocaleDateString('pt-BR')
+      : data.toLocaleDateString('pt-BR');
+  };
+
+  const dataFormatada = formatarData(orcamento.dataHora);
 
   const valorFormatado = Number(orcamento.valor || 0).toLocaleString('pt-BR', {
     style: 'currency',

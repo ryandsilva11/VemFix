@@ -46,8 +46,12 @@ export default function OrcamentoModal({
   // Chave do localStorage para este chat
   const storageKey = `vemfix_rascunho_orcamento_${chatId || 'default'}`;
 
-  // Data atual no formato YYYY-MM-DD para o input type="date"
-  const hojeStr = new Date().toISOString().split('T')[0];
+  // Data atual local no formato YYYY-MM-DD para o input type="date"
+  const agoraLocal = new Date();
+  const hojeAno = agoraLocal.getFullYear();
+  const hojeMes = String(agoraLocal.getMonth() + 1).padStart(2, '0');
+  const hojeDia = String(agoraLocal.getDate()).padStart(2, '0');
+  const hojeStr = `${hojeAno}-${hojeMes}-${hojeDia}`;
 
   // Estados do formulário
   const [titulo, setTitulo] = useState('');
@@ -308,6 +312,12 @@ export default function OrcamentoModal({
 
     setEnviando(true);
     try {
+      const agoraEnvio = new Date();
+      const horaStr = agoraEnvio.toTimeString().split(' ')[0]; // HH:mm:ss
+      const dataHoraCompleta = dataEmissao
+        ? `${dataEmissao}T${horaStr}`
+        : agoraEnvio.toISOString().slice(0, 19);
+
       const dadosOrcamento = {
         chatId,
         titulo: titulo.trim(),
@@ -318,7 +328,7 @@ export default function OrcamentoModal({
         anexo: foto || null,
         clienteNome: nomeCliente.trim(),
         prestadorNome: nomePrestador || prestadorNome,
-        dataHora: dataEmissao ? `${dataEmissao}T12:00:00` : null,
+        dataHora: dataHoraCompleta,
       };
 
       // Salva no localStorage para que os dados fiquem guardados para edição futura
