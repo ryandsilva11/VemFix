@@ -98,7 +98,7 @@ export default function OrcamentoModal({
       if (rascunhoJson) {
         const r = JSON.parse(rascunhoJson);
         setTitulo(r.titulo || '');
-        setDataEmissao(r.dataEmissao || hojeStr);
+        setDataEmissao(r.dataEmissao && r.dataEmissao <= hojeStr ? r.dataEmissao : hojeStr);
         setNomeCliente(r.nomeCliente || clienteNome);
         setCepCliente(r.cepCliente || clienteCep);
         setNomePrestador(r.nomePrestador || prestadorNome);
@@ -312,12 +312,6 @@ export default function OrcamentoModal({
 
     setEnviando(true);
     try {
-      const agoraEnvio = new Date();
-      const horaStr = agoraEnvio.toTimeString().split(' ')[0]; // HH:mm:ss
-      const dataHoraCompleta = dataEmissao
-        ? `${dataEmissao}T${horaStr}`
-        : agoraEnvio.toISOString().slice(0, 19);
-
       const dadosOrcamento = {
         chatId,
         titulo: titulo.trim(),
@@ -328,7 +322,7 @@ export default function OrcamentoModal({
         anexo: foto || null,
         clienteNome: nomeCliente.trim(),
         prestadorNome: nomePrestador || prestadorNome,
-        dataHora: dataHoraCompleta,
+        dataHora: null,
       };
 
       // Salva no localStorage para que os dados fiquem guardados para edição futura

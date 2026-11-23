@@ -57,7 +57,7 @@ public class Orcamento {
         this.descProblema = dto.descProblema();
         this.descServico = dto.descServico();
         this.anexo = dto.anexo();
-        this.dataHora = dto.dataHora() != null ? dto.dataHora() : LocalDateTime.now();
+        this.dataHora = LocalDateTime.now();
     }
 
     public Long getId() {
