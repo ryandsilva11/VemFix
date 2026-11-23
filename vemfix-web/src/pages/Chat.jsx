@@ -358,10 +358,12 @@ export default function Chat() {
 
     // Se a conversa ainda não foi criada, cria antes de salvar o orçamento
     if (!idChatAtual) {
-      const resChat = await api.post('/chats', {
-        prestadorSolicitanteId: usuario.id,
-        prestadorId: outroUsuario.id,
-      });
+      const payloadChat =
+        outroUsuario?.tipo === 'prestador'
+          ? { prestadorSolicitanteId: outroUsuario.id, prestadorId: usuario.id }
+          : { clienteId: outroUsuario.id, prestadorId: usuario.id };
+
+      const resChat = await api.post('/chats', payloadChat);
       dadosDoChat = resChat.data;
       idChatAtual = resChat.data.id;
       setChatDados(dadosDoChat);
@@ -377,6 +379,7 @@ export default function Chat() {
       descProblema: dadosOrcamento.descProblema,
       descServico: dadosOrcamento.descServico,
       anexo: dadosOrcamento.anexo,
+      dataHora: dadosOrcamento.dataHora,
     };
 
     const resOrc = await api.post('/orcamentos', payload);

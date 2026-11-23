@@ -318,7 +318,7 @@ export default function OrcamentoModal({
         anexo: foto || null,
         clienteNome: nomeCliente.trim(),
         prestadorNome: nomePrestador || prestadorNome,
-        dataHora: dataEmissao ? new Date(dataEmissao + 'T12:00:00') : new Date(),
+        dataHora: dataEmissao ? `${dataEmissao}T12:00:00` : null,
       };
 
       // Salva no localStorage para que os dados fiquem guardados para edição futura
