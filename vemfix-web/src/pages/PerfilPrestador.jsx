@@ -50,9 +50,13 @@ export default function PerfilPrestador() {
         setPrestador(resPrestador.data);
 
         const params = {};
-        if (usuario?.id && usuario?.tipo) {
+        if (usuario?.id) {
+          const tipoFinal = (
+            usuario?.tipo ||
+            (usuario?.catServico ? 'PRESTADOR' : 'CLIENTE')
+          ).toUpperCase();
           params.usuarioId = usuario.id;
-          params.tipo = usuario.tipo;
+          params.tipo = tipoFinal;
         }
 
         // 2. Busca os posts do prestador (tenta endpoint específico ou filtra todos)

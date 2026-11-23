@@ -41,9 +41,13 @@ export default function Feed() {
       setErro(null);
 
       const params = {};
-      if (usuario?.id && usuario?.tipo) {
+      if (usuario?.id) {
+        const tipoFinal = (
+          usuario?.tipo ||
+          (usuario?.catServico ? 'PRESTADOR' : 'CLIENTE')
+        ).toUpperCase();
         params.usuarioId = usuario.id;
-        params.tipo = usuario.tipo;
+        params.tipo = tipoFinal;
       }
 
       // Chamada GET para /posts informando o usuário logado para carregar o status de curtida

@@ -6,6 +6,7 @@ import java.util.Set;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.vemfix.api.dto.PostRequestDTO;
@@ -18,8 +19,6 @@ import com.vemfix.api.repository.ClienteRepository;
 import com.vemfix.api.repository.PostCurtidaRepository;
 import com.vemfix.api.repository.PostRepository;
 import com.vemfix.api.repository.PrestadorRepository;
-
-import jakarta.transaction.Transactional;
 
 @Service
 public class PostService {
@@ -43,7 +42,8 @@ public class PostService {
     @Transactional
     public PostResponseDTO create(PostRequestDTO dto, Long id) {
         Prestador prestador = prestRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Prestador não encontrado com o ID " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Prestador não encontrado com o ID " + id));
 
         Post post = new Post(dto);
         post.setPrestador(prestador);
@@ -51,7 +51,7 @@ public class PostService {
         return new PostResponseDTO(postRepository.save(post), false);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<PostResponseDTO> listAll(Long usuarioId, String tipo) {
         List<Post> posts = postRepository.findByOrderByDataCriacaoDesc();
         Set<Long> curtidos = getPostIdsCurtidosPeloUsuario(usuarioId, tipo);
@@ -60,12 +60,12 @@ public class PostService {
                 .toList();
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<PostResponseDTO> listAll() {
         return listAll(null, null);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<PostResponseDTO> findByPrestadorId(Long prestadorId, Long usuarioId, String tipo) {
         List<Post> posts = postRepository.findByPrestadorId(prestadorId);
         Set<Long> curtidos = getPostIdsCurtidosPeloUsuario(usuarioId, tipo);
@@ -74,7 +74,7 @@ public class PostService {
                 .toList();
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<PostResponseDTO> findByPrestadorId(Long prestadorId) {
         return findByPrestadorId(prestadorId, null, null);
     }
@@ -82,46 +82,68 @@ public class PostService {
     @Transactional
     public PostResponseDTO curtir(Long postId, Long usuarioId, String tipo) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Post não encontrado com o ID " + postId));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Post não encontrado com o ID " + postId));
 
-        if (usuarioId == null || tipo == null || tipo.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usuário não identificado para curtir/descurtir o post.");
+        if (usuarioId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Usuário não identificado para curtir/descurtir o post.");
         }
 
-        boolean isCliente = "CLIENTE".equalsIgnoreCase(tipo.trim());
-        boolean jaCurtiu;
+        Cliente cliente = null;
+        Prestador prestador = null;
 
-        if (isCliente) {
-            jaCurtiu = postCurtidaRepository.existsByPostIdAndClienteId(postId, usuarioId);
+        // Resolve o usuário autenticado por tipo ou por existência no banco com fallback seguro
+        if ("CLIENTE".equalsIgnoreCase(tipo)) {
+            cliente = clienteRepository.findById(usuarioId).orElse(null);
+            if (cliente == null) {
+                prestador = prestRepository.findById(usuarioId).orElse(null);
+            }
+        } else if ("PRESTADOR".equalsIgnoreCase(tipo)) {
+            prestador = prestRepository.findById(usuarioId).orElse(null);
+            if (prestador == null) {
+                cliente = clienteRepository.findById(usuarioId).orElse(null);
+            }
         } else {
-            jaCurtiu = postCurtidaRepository.existsByPostIdAndPrestadorId(postId, usuarioId);
+            // Tipo não informado: verifica em cliente e depois prestador
+            cliente = clienteRepository.findById(usuarioId).orElse(null);
+            if (cliente == null) {
+                prestador = prestRepository.findById(usuarioId).orElse(null);
+            }
+        }
+
+        if (cliente == null && prestador == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Usuário não encontrado com o ID " + usuarioId);
         }
 
         boolean agoraCurtido;
-        if (jaCurtiu) {
-            // Descurtir: remove o registro de curtida desse usuário
-            if (isCliente) {
-                postCurtidaRepository.deleteByPostIdAndClienteId(postId, usuarioId);
+        if (cliente != null) {
+            boolean jaCurtiu = postCurtidaRepository.existsByPostIdAndClienteId(postId, cliente.getId());
+            if (jaCurtiu) {
+                postCurtidaRepository.deleteByPostIdAndClienteId(postId, cliente.getId());
+                long curtidasAtuais = post.getCurtidas() != null ? post.getCurtidas() : 0L;
+                post.setCurtidas(Math.max(0L, curtidasAtuais - 1));
+                agoraCurtido = false;
             } else {
-                postCurtidaRepository.deleteByPostIdAndPrestadorId(postId, usuarioId);
-            }
-            long curtidasAtuais = post.getCurtidas() != null ? post.getCurtidas() : 0L;
-            post.setCurtidas(Math.max(0L, curtidasAtuais - 1));
-            agoraCurtido = false;
-        } else {
-            // Curtir: salva a curtida na conta do usuário
-            if (isCliente) {
-                Cliente cliente = clienteRepository.findById(usuarioId)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado com o ID " + usuarioId));
                 postCurtidaRepository.save(new PostCurtida(post, cliente));
-            } else {
-                Prestador prestador = prestRepository.findById(usuarioId)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Prestador não encontrado com o ID " + usuarioId));
-                postCurtidaRepository.save(new PostCurtida(post, prestador));
+                long curtidasAtuais = post.getCurtidas() != null ? post.getCurtidas() : 0L;
+                post.setCurtidas(curtidasAtuais + 1);
+                agoraCurtido = true;
             }
-            long curtidasAtuais = post.getCurtidas() != null ? post.getCurtidas() : 0L;
-            post.setCurtidas(curtidasAtuais + 1);
-            agoraCurtido = true;
+        } else {
+            boolean jaCurtiu = postCurtidaRepository.existsByPostIdAndPrestadorId(postId, prestador.getId());
+            if (jaCurtiu) {
+                postCurtidaRepository.deleteByPostIdAndPrestadorId(postId, prestador.getId());
+                long curtidasAtuais = post.getCurtidas() != null ? post.getCurtidas() : 0L;
+                post.setCurtidas(Math.max(0L, curtidasAtuais - 1));
+                agoraCurtido = false;
+            } else {
+                postCurtidaRepository.save(new PostCurtida(post, prestador));
+                long curtidasAtuais = post.getCurtidas() != null ? post.getCurtidas() : 0L;
+                post.setCurtidas(curtidasAtuais + 1);
+                agoraCurtido = true;
+            }
         }
 
         Post salvo = postRepository.save(post);
@@ -129,13 +151,29 @@ public class PostService {
     }
 
     private Set<Long> getPostIdsCurtidosPeloUsuario(Long usuarioId, String tipo) {
-        if (usuarioId == null || tipo == null || tipo.isBlank()) {
+        if (usuarioId == null) {
             return Collections.emptySet();
         }
-        if ("CLIENTE".equalsIgnoreCase(tipo.trim())) {
+        if ("CLIENTE".equalsIgnoreCase(tipo)) {
+            Set<Long> set = postCurtidaRepository.findPostIdsByClienteId(usuarioId);
+            if (!set.isEmpty() || clienteRepository.existsById(usuarioId)) {
+                return set;
+            }
+            return postCurtidaRepository.findPostIdsByPrestadorId(usuarioId);
+        } else if ("PRESTADOR".equalsIgnoreCase(tipo)) {
+            Set<Long> set = postCurtidaRepository.findPostIdsByPrestadorId(usuarioId);
+            if (!set.isEmpty() || prestRepository.existsById(usuarioId)) {
+                return set;
+            }
             return postCurtidaRepository.findPostIdsByClienteId(usuarioId);
         } else {
-            return postCurtidaRepository.findPostIdsByPrestadorId(usuarioId);
+            if (clienteRepository.existsById(usuarioId)) {
+                return postCurtidaRepository.findPostIdsByClienteId(usuarioId);
+            }
+            if (prestRepository.existsById(usuarioId)) {
+                return postCurtidaRepository.findPostIdsByPrestadorId(usuarioId);
+            }
+            return Collections.emptySet();
         }
     }
 }

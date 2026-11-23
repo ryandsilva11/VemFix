@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.vemfix.api.model.PostCurtida;
 
@@ -17,11 +18,13 @@ public interface PostCurtidaRepository extends JpaRepository<PostCurtida, Long> 
 
     boolean existsByPostIdAndPrestadorId(Long postId, Long prestadorId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Transactional
     @Query("DELETE FROM PostCurtida c WHERE c.post.id = :postId AND c.cliente.id = :clienteId")
     void deleteByPostIdAndClienteId(@Param("postId") Long postId, @Param("clienteId") Long clienteId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Transactional
     @Query("DELETE FROM PostCurtida c WHERE c.post.id = :postId AND c.prestador.id = :prestadorId")
     void deleteByPostIdAndPrestadorId(@Param("postId") Long postId, @Param("prestadorId") Long prestadorId);
 

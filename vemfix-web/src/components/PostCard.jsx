@@ -60,6 +60,11 @@ export default function PostCard({ post }) {
 
     if (loadingCurtida || !post?.id) return;
 
+    const tipoFinal = (
+      usuario?.tipo ||
+      (usuario?.catServico ? 'PRESTADOR' : 'CLIENTE')
+    ).toUpperCase();
+
     // Alternância otimista imediata na interface
     const proximoCurtido = !curtido;
     const proximaQtd = proximoCurtido ? curtidas + 1 : Math.max(0, curtidas - 1);
@@ -69,12 +74,19 @@ export default function PostCard({ post }) {
     setLoadingCurtida(true);
 
     try {
-      const response = await api.patch(`/posts/${post.id}`, null, {
-        params: {
+      const response = await api.patch(
+        `/posts/${post.id}`,
+        {
           usuarioId: usuario.id,
-          tipo: usuario.tipo,
+          tipo: tipoFinal,
         },
-      });
+        {
+          params: {
+            usuarioId: usuario.id,
+            tipo: tipoFinal,
+          },
+        }
+      );
 
       if (response.data) {
         if (response.data.curtidas != null) {
@@ -91,7 +103,9 @@ export default function PostCard({ post }) {
       setCurtidas(curtidas);
       toast({
         title: 'Erro',
-        description: 'Não foi possível atualizar a curtida. Tente novamente.',
+        description:
+          error.response?.data?.message ||
+          'Não foi possível atualizar a curtida. Tente novamente.',
         status: 'error',
         duration: 3000,
         isClosable: true,
