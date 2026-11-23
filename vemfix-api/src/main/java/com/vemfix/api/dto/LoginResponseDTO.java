@@ -6,6 +6,6 @@ public record LoginResponseDTO(
         String email,
         String tipo,
         String telefone,
-        String cidade,
+        String cep,
         String catServico) {
 }

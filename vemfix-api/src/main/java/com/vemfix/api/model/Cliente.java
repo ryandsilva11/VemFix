@@ -18,7 +18,7 @@ public class Cliente extends Usuario {
         this.setEmail(dto.email());
         this.setSenha(dto.senha());
         this.setTelefone(dto.telefone());
-        this.setCidade(dto.cidade());
+        this.setCep(dto.cep());
         this.setDataNasc(dto.dataNasc());
     }
 }

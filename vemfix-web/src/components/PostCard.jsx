@@ -25,7 +25,7 @@ export default function PostCard({ post }) {
   const prestador = post?.prestador;
   const nome = prestador?.nome;
   const categoria = prestador?.catServico;
-  const cidade = prestador?.cidade;
+  const cep = prestador?.cep;
   const avaliacao = prestador?.avaliacao != null ? prestador.avaliacao.toFixed(1) : null;
 
   // Verifica se o anexo existe, não é o texto padrão "string" do Swagger e não falhou ao carregar
@@ -126,7 +126,7 @@ export default function PostCard({ post }) {
                 {nome}
               </Text>
             )}
-            {(categoria || cidade) && (
+            {(categoria || cep) && (
               <Text
                 fontSize="13px"
                 color="vemfix.graySubtitle"
@@ -134,8 +134,8 @@ export default function PostCard({ post }) {
                 lineHeight="1.3"
               >
                 {categoria}
-                {categoria && cidade ? ' • ' : ''}
-                {cidade}
+                {categoria && cep ? ' • ' : ''}
+                {cep ? `CEP ${cep}` : ''}
               </Text>
             )}
           </Box>

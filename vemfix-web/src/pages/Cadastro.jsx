@@ -74,7 +74,7 @@ export default function Cadastro() {
     nome: '',
     email: '',
     telefone: '',
-    cidade: '',
+    cep: '',
     cpf: '',
     dataNasc: '',
     senha: '',
@@ -85,7 +85,7 @@ export default function Cadastro() {
     nome: '',
     email: '',
     telefone: '',
-    cidade: '',
+    cep: '',
     cpf: '',
     dataNasc: '',
     catServico: 'Encanador',
@@ -310,13 +310,13 @@ export default function Cadastro() {
 
                 <FormControl isRequired>
                   <FormLabel fontSize="13px" fontWeight="600" color="vemfix.dark">
-                    Cidade
+                    CEP
                   </FormLabel>
                   <Input
-                    name="cidade"
-                    value={formCliente.cidade}
+                    name="cep"
+                    value={formCliente.cep}
                     onChange={handleChangeCliente}
-                    placeholder="Sua cidade"
+                    placeholder="00000-000"
                     focusBorderColor="vemfix.green"
                   />
                 </FormControl>
@@ -438,13 +438,13 @@ export default function Cadastro() {
 
                 <FormControl isRequired>
                   <FormLabel fontSize="13px" fontWeight="600" color="vemfix.dark">
-                    Cidade
+                    CEP
                   </FormLabel>
                   <Input
-                    name="cidade"
-                    value={formPrestador.cidade}
+                    name="cep"
+                    value={formPrestador.cep}
                     onChange={handleChangePrestador}
-                    placeholder="Sua cidade"
+                    placeholder="00000-000"
                     focusBorderColor="vemfix.green"
                   />
                 </FormControl>

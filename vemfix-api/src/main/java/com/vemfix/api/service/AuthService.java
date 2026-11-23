@@ -36,7 +36,7 @@ public class AuthService {
                         cliente.getEmail(),
                         "CLIENTE",
                         cliente.getTelefone(),
-                        cliente.getCidade(),
+                        cliente.getCep(),
                         null);
             }
         }
@@ -52,7 +52,7 @@ public class AuthService {
                         prestador.getEmail(),
                         "PRESTADOR",
                         prestador.getTelefone(),
-                        prestador.getCidade(),
+                        prestador.getCep(),
                         prestador.getCatServico());
             }
         }

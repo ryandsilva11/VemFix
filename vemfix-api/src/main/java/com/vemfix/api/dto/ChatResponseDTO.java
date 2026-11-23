@@ -8,6 +8,7 @@ public record ChatResponseDTO(
         Long id,
         Long clienteId,
         String clienteNome,
+        String clienteCep,
         Long prestadorId,
         String prestadorNome,
         String prestadorCatServico,
@@ -27,6 +28,9 @@ public record ChatResponseDTO(
                 chat.getCliente() != null
                         ? chat.getCliente().getNome()
                         : (chat.getPrestadorSolicitante() != null ? chat.getPrestadorSolicitante().getNome() : null),
+                chat.getCliente() != null
+                        ? chat.getCliente().getCep()
+                        : (chat.getPrestadorSolicitante() != null ? chat.getPrestadorSolicitante().getCep() : null),
                 chat.getPrestador().getId(),
                 chat.getPrestador().getNome(),
                 chat.getPrestador() != null ? chat.getPrestador().getCatServico() : null,

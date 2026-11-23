@@ -1,5 +1,7 @@
 package com.vemfix.api.dto;
 
+import java.time.LocalDateTime;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -17,9 +19,9 @@ public record OrcamentoRequestDTO(
         @Positive(message = "O valor deve ser maior que zero")
         Double valor,
 
-        @NotBlank(message = "O endereço é obrigatório")
-        @Size(max = 200, message = "O endereço deve ter no máximo 200 caracteres")
-        String endereco,
+        @NotBlank(message = "O CEP é obrigatório")
+        @Size(max = 20, message = "O CEP deve ter no máximo 20 caracteres")
+        String cep,
 
         @NotBlank(message = "A descrição do problema é obrigatória")
         @Size(max = 1000, message = "A descrição do problema deve ter no máximo 1000 caracteres")
@@ -29,7 +31,8 @@ public record OrcamentoRequestDTO(
         @Size(max = 1000, message = "A descrição do serviço deve ter no máximo 1000 caracteres")
         String descServico,
 
-        @Size(max = 2048, message = "A URL do anexo deve ter no máximo 2048 caracteres")
-        String anexo
+        String anexo,
+
+        LocalDateTime dataHora
 ) {
 }

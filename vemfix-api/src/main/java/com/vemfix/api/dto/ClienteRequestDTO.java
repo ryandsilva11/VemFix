@@ -19,7 +19,7 @@ public record ClienteRequestDTO(
 
         @NotBlank(message = "O telefone é obrigatório") @Size(min = 10, max = 11, message = "O telefone deve ter entre 10 e 11 dígitos") String telefone,
 
-        @NotBlank(message = "A cidade é obrigatória") String cidade,
+        @NotBlank(message = "O CEP é obrigatório") String cep,
 
         @NotNull(message = "A data de nascimento é obrigatória") @Past(message = "A data de nascimento deve ser uma data no passado") LocalDate dataNasc) {
 }

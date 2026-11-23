@@ -51,7 +51,7 @@ public class ClienteService {
             cliente.setNome(dto.nome());
         }
         cliente.setTelefone(dto.telefone());
-        cliente.setCidade(dto.cidade());
+        cliente.setCep(dto.cep());
         if (dto.senha() != null && !dto.senha().isBlank()) {
             cliente.setSenha(dto.senha());
         }

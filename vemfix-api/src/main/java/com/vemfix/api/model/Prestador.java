@@ -31,7 +31,7 @@ public class Prestador extends Usuario {
         this.setEmail(dto.email());
         this.setSenha(dto.senha());
         this.setTelefone(dto.telefone());
-        this.setCidade(dto.cidade());
+        this.setCep(dto.cep());
         this.setDataNasc(dto.dataNasc());
 
         // E os campos próprios do Prestador:

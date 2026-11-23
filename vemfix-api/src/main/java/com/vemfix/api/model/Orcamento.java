@@ -31,8 +31,8 @@ public class Orcamento {
     @Column(nullable = false)
     private Double valor;
 
-    @Column(nullable = false, length = 200)
-    private String endereco;
+    @Column(nullable = false, length = 20)
+    private String cep;
 
     @Column(nullable = false, length = 1000)
     private String descProblema;
@@ -40,7 +40,7 @@ public class Orcamento {
     @Column(nullable = false, length = 1000)
     private String descServico;
 
-    @Column(length = 2048)
+    @Column(columnDefinition = "LONGTEXT")
     private String anexo;
 
     @Column(nullable = false)
@@ -53,11 +53,11 @@ public class Orcamento {
         this.chat = chat;
         this.titulo = dto.titulo();
         this.valor = dto.valor();
-        this.endereco = dto.endereco();
+        this.cep = dto.cep();
         this.descProblema = dto.descProblema();
         this.descServico = dto.descServico();
         this.anexo = dto.anexo();
-        this.dataHora = LocalDateTime.now();
+        this.dataHora = dto.dataHora() != null ? dto.dataHora() : LocalDateTime.now();
     }
 
     public Long getId() {
@@ -92,12 +92,12 @@ public class Orcamento {
         this.valor = valor;
     }
 
-    public String getEndereco() {
-        return endereco;
+    public String getCep() {
+        return cep;
     }
 
-    public void setEndereco(String endereco) {
-        this.endereco = endereco;
+    public void setCep(String cep) {
+        this.cep = cep;
     }
 
     public String getDescProblema() {

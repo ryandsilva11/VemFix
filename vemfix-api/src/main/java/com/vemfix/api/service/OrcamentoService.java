@@ -29,7 +29,12 @@ public class OrcamentoService {
                 .orElseThrow(() -> new RuntimeException("Chat não encontrado com o ID: " + dto.chatId()));
 
         Orcamento orcamento = new Orcamento(chat, dto);
-        return new OrcamentoResponseDTO(orcamentoRepository.save(orcamento));
+        Orcamento orcamentoSalvo = orcamentoRepository.save(orcamento);
+
+        chat.setUltimaMensagem(orcamentoSalvo.getDataHora());
+        chatRepository.save(chat);
+
+        return new OrcamentoResponseDTO(orcamentoSalvo);
     }
 
     @Transactional(readOnly = true)

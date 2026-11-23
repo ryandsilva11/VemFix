@@ -10,7 +10,7 @@ public record ClienteResponseDTO(
         String cpf,
         String email,
         String telefone,
-        String cidade,
+        String cep,
         LocalDate dataNasc,
         boolean IsActive) {
     public ClienteResponseDTO(Cliente cliente) {
@@ -20,7 +20,7 @@ public record ClienteResponseDTO(
                 cliente.getCpf(),
                 cliente.getEmail(),
                 cliente.getTelefone(),
-                cliente.getCidade(),
+                cliente.getCep(),
                 cliente.getDataNasc(),
                 cliente.getIsActive());
     }

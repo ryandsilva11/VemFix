@@ -6,12 +6,21 @@ import {
   Text,
   Input,
   IconButton,
+  Button,
   Spinner,
   useToast,
 } from '@chakra-ui/react';
-import { FaArrowLeft, FaPaperPlane, FaPaperclip, FaDollarSign } from 'react-icons/fa';
+import {
+  FaArrowLeft,
+  FaPaperPlane,
+  FaPaperclip,
+  FaDollarSign,
+  FaFilePdf,
+} from 'react-icons/fa';
 import { useNavigate, useParams } from 'react-router-dom';
 import Header from '../components/Header';
+import OrcamentoModal from '../components/OrcamentoModal';
+import OrcamentoCard from '../components/OrcamentoCard';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
@@ -25,9 +34,15 @@ export default function Chat() {
   const [chatDados, setChatDados] = useState(null);
   const [currentChatId, setCurrentChatId] = useState(chatId || null);
   const [mensagens, setMensagens] = useState([]);
+  const [orcamentos, setOrcamentos] = useState([]);
   const [novaMensagem, setNovaMensagem] = useState('');
   const [carregando, setCarregando] = useState(true);
   const [enviando, setEnviando] = useState(false);
+
+  // Estados do Modal de Orçamento
+  const [isOrcamentoModalOpen, setIsOrcamentoModalOpen] = useState(false);
+  const [modoModalOrcamento, setModoModalOrcamento] = useState('elaborar');
+  const [orcamentoSelecionado, setOrcamentoSelecionado] = useState(null);
 
   const messagesEndRef = useRef(null);
 
@@ -66,7 +81,7 @@ export default function Chat() {
 
   useEffect(() => {
     scrollToBottom(false);
-  }, [mensagens]);
+  }, [mensagens, orcamentos]);
 
   // Carrega os dados da conversa ou do prestador selecionado
   useEffect(() => {
@@ -87,7 +102,7 @@ export default function Chat() {
           setChatDados(chat);
 
           const euSouPrestador = usuario.id === chat.prestadorId;
-          let outroId, outroNome, outroTipo, catServico;
+          let outroId, outroNome, outroTipo, catServico, outroCep;
 
           if (euSouPrestador) {
             // Eu sou o prestador contratado; o outro usuário é quem solicitou o serviço
@@ -96,11 +111,13 @@ export default function Chat() {
               outroNome = chat.prestadorSolicitanteNome || chat.clienteNome;
               outroTipo = 'prestador';
               catServico = chat.prestadorSolicitanteCatServico || '';
+              outroCep = chat.clienteCep || '';
             } else {
               outroId = chat.clienteId;
               outroNome = chat.clienteNome;
               outroTipo = 'cliente';
               catServico = '';
+              outroCep = chat.clienteCep || '';
             }
           } else {
             // Eu sou o solicitante (seja cliente ou prestador solicitante)
@@ -108,6 +125,7 @@ export default function Chat() {
             outroNome = chat.prestadorNome;
             outroTipo = 'prestador';
             catServico = chat.prestadorCatServico || '';
+            outroCep = chat.clienteCep || '';
           }
 
           setOutroUsuario({
@@ -115,6 +133,7 @@ export default function Chat() {
             nome: outroNome,
             tipo: outroTipo,
             catServico,
+            cep: outroCep,
           });
 
           // Busca mensagens existentes
@@ -123,9 +142,18 @@ export default function Chat() {
             id: m.id,
             remetenteTipo: m.remetenteTipo,
             conteudo: m.conteudo,
+            dataEnvio: m.dataEnvio,
             horario: formatarHorario(m.dataEnvio),
           }));
           setMensagens(msgsFormatadas);
+
+          // Busca orçamentos existentes desta conversa
+          try {
+            const resOrc = await api.get(`/orcamentos/chat/${chatId}`);
+            setOrcamentos(resOrc.data || []);
+          } catch {
+            setOrcamentos([]);
+          }
         } else if (prestadorId) {
           // Caso 2: Clicou em "Conversar" no perfil de um prestador
           // 1. Busca dados do prestador procurado
@@ -137,6 +165,7 @@ export default function Chat() {
             nome: dadosPrestador.nome,
             tipo: 'prestador',
             catServico: dadosPrestador.catServico || '',
+            cep: dadosPrestador.cep || '',
           });
 
           // 2. Verifica se JÁ existe conversa entre este usuário e este prestador
@@ -166,18 +195,29 @@ export default function Chat() {
                 id: m.id,
                 remetenteTipo: m.remetenteTipo,
                 conteudo: m.conteudo,
+                dataEnvio: m.dataEnvio,
                 horario: formatarHorario(m.dataEnvio),
               }));
               setMensagens(msgsFormatadas);
+
+              // Busca orçamentos do chat existente
+              try {
+                const resOrc = await api.get(`/orcamentos/chat/${chatExistente.id}`);
+                setOrcamentos(resOrc.data || []);
+              } catch {
+                setOrcamentos([]);
+              }
             } else {
               setChatDados(null);
               setCurrentChatId(null);
               setMensagens([]);
+              setOrcamentos([]);
             }
           } catch {
             setChatDados(null);
             setCurrentChatId(null);
             setMensagens([]);
+            setOrcamentos([]);
           }
         }
       } catch (err) {
@@ -197,15 +237,19 @@ export default function Chat() {
     carregarDados();
   }, [chatId, prestadorId, isAutenticado, usuario, navigate, isPrestador, toast]);
 
-  // Polling em tempo real: busca novas mensagens a cada 2 segundos sem recarregar a tela
+  // Polling em tempo real: busca novas mensagens e orçamentos a cada 2.5 segundos
   useEffect(() => {
     if (!currentChatId) return;
 
     let ativo = true;
 
-    const buscarNovasMensagens = async () => {
+    const buscarNovasMensagensEOrcamentos = async () => {
       try {
-        const resMsg = await api.get(`/mensagens/${currentChatId}`);
+        const [resMsg, resOrc] = await Promise.all([
+          api.get(`/mensagens/${currentChatId}`),
+          api.get(`/orcamentos/chat/${currentChatId}`).catch(() => ({ data: [] })),
+        ]);
+
         if (!ativo) return;
 
         const msgs = resMsg.data || [];
@@ -215,17 +259,26 @@ export default function Chat() {
               id: m.id,
               remetenteTipo: m.remetenteTipo,
               conteudo: m.conteudo,
+              dataEnvio: m.dataEnvio,
               horario: formatarHorario(m.dataEnvio),
             }));
           }
           return prevMsgs;
+        });
+
+        const orcs = resOrc.data || [];
+        setOrcamentos((prevOrcs) => {
+          if (orcs.length !== prevOrcs.length) {
+            return orcs;
+          }
+          return prevOrcs;
         });
       } catch {
         // Silencioso durante o polling em segundo plano
       }
     };
 
-    const interval = setInterval(buscarNovasMensagens, 2000);
+    const interval = setInterval(buscarNovasMensagensEOrcamentos, 2500);
 
     return () => {
       ativo = false;
@@ -233,52 +286,7 @@ export default function Chat() {
     };
   }, [currentChatId]);
 
-  // Caso esteja na tela de um prestador antes de enviar a 1ª mensagem,
-  // detecta se o chat foi criado por outra ação/aba
-  useEffect(() => {
-    if (currentChatId || !prestadorId || !usuario?.id) return;
-
-    let ativo = true;
-
-    const checarSeChatFoiCriado = async () => {
-      try {
-        const endpoint = isPrestador
-          ? `/chats/prestador/${usuario.id}`
-          : `/chats/cliente/${usuario.id}`;
-        const resChats = await api.get(endpoint);
-        if (!ativo) return;
-
-        const chatExistente = (resChats.data || []).find((c) => {
-          if (isPrestador) {
-            return (
-              c.prestadorSolicitanteId === usuario.id &&
-              c.prestadorId === Number(prestadorId)
-            );
-          }
-          return (
-            c.clienteId === usuario.id &&
-            c.prestadorId === Number(prestadorId)
-          );
-        });
-
-        if (chatExistente) {
-          setChatDados(chatExistente);
-          setCurrentChatId(chatExistente.id);
-        }
-      } catch {
-        // Silencioso
-      }
-    };
-
-    const interval = setInterval(checarSeChatFoiCriado, 2500);
-
-    return () => {
-      ativo = false;
-      clearInterval(interval);
-    };
-  }, [currentChatId, prestadorId, usuario, isPrestador]);
-
-  // Envio de nova mensagem
+  // Envio de nova mensagem de texto
   const handleEnviarMensagem = async (e) => {
     if (e) e.preventDefault();
     const texto = novaMensagem.trim();
@@ -311,11 +319,6 @@ export default function Chat() {
         setCurrentChatId(idChatAtual);
       }
 
-      // Regra de Ouro:
-      // Quem foi procurado é tratado como PRESTADOR na conversa.
-      // Quem iniciou a conversa é tratado como CLIENTE na conversa.
-      // Se sou o prestador contratado (usuario.id === dadosDoChat.prestadorId), remetenteTipo = 'PRESTADOR'.
-      // Caso contrário (sou o cliente ou o prestador solicitante), remetenteTipo = 'CLIENTE'.
       const souPrestadorNesteChat = dadosDoChat ? usuario.id === dadosDoChat.prestadorId : false;
       const remetenteTipo = souPrestadorNesteChat ? 'PRESTADOR' : 'CLIENTE';
 
@@ -328,6 +331,7 @@ export default function Chat() {
         id: resMsg.data.id,
         remetenteTipo: resMsg.data.remetenteTipo,
         conteudo: resMsg.data.conteudo,
+        dataEnvio: resMsg.data.dataEnvio,
         horario: formatarHorario(resMsg.data.dataEnvio),
       };
 
@@ -346,6 +350,98 @@ export default function Chat() {
       setEnviando(false);
     }
   };
+
+  // Envio de orçamento pelo prestador
+  const handleEnviarOrcamento = async (dadosOrcamento) => {
+    let idChatAtual = currentChatId;
+    let dadosDoChat = chatDados;
+
+    // Se a conversa ainda não foi criada, cria antes de salvar o orçamento
+    if (!idChatAtual) {
+      const resChat = await api.post('/chats', {
+        prestadorSolicitanteId: usuario.id,
+        prestadorId: outroUsuario.id,
+      });
+      dadosDoChat = resChat.data;
+      idChatAtual = resChat.data.id;
+      setChatDados(dadosDoChat);
+      setCurrentChatId(idChatAtual);
+    }
+
+    // Cria o orçamento no banco de dados
+    const payload = {
+      chatId: idChatAtual,
+      titulo: dadosOrcamento.titulo,
+      valor: dadosOrcamento.valor,
+      cep: dadosOrcamento.cep,
+      descProblema: dadosOrcamento.descProblema,
+      descServico: dadosOrcamento.descServico,
+      anexo: dadosOrcamento.anexo,
+    };
+
+    const resOrc = await api.post('/orcamentos', payload);
+    const novoOrcamento = resOrc.data;
+
+    // Atualiza a lista de orçamentos imediatamente
+    setOrcamentos((prev) => [novoOrcamento, ...prev]);
+
+    // Envia uma mensagem no chat registrando a emissão formal do orçamento
+    const valorFmt = Number(dadosOrcamento.valor).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    });
+
+    const resMsg = await api.post(`/mensagens/${idChatAtual}`, {
+      remetenteTipo: 'PRESTADOR',
+      conteudo: `📄 Orçamento emitido: "${dadosOrcamento.titulo}" no valor de ${valorFmt}`,
+    });
+
+    const novaMsg = {
+      id: resMsg.data.id,
+      remetenteTipo: resMsg.data.remetenteTipo,
+      conteudo: resMsg.data.conteudo,
+      dataEnvio: resMsg.data.dataEnvio,
+      horario: formatarHorario(resMsg.data.dataEnvio),
+    };
+
+    setMensagens((prev) => [...prev, novaMsg]);
+  };
+
+  // Abre a visualização expandida de um orçamento
+  const handleExpandirOrcamento = (orc) => {
+    setOrcamentoSelecionado(orc);
+    setModoModalOrcamento('visualizar');
+    setIsOrcamentoModalOpen(true);
+  };
+
+  // Constrói a timeline combinada de mensagens e orçamentos ordenada por timestamp
+  const timelineItens = [
+    ...mensagens.map((m) => ({
+      tipoItem: 'MENSAGEM',
+      id: `msg-${m.id}`,
+      timestamp: new Date(m.dataEnvio || 0).getTime(),
+      dados: m,
+    })),
+    ...orcamentos.map((o) => ({
+      tipoItem: 'ORCAMENTO',
+      id: `orc-${o.id}`,
+      timestamp: new Date(o.dataHora || 0).getTime(),
+      dados: o,
+    })),
+  ].sort((a, b) => a.timestamp - b.timestamp);
+
+  // Nome e CEP do cliente para pré-preenchimento no modal
+  const clienteNomePreenchimento = souPrestadorDoChat
+    ? outroUsuario?.nome || 'Cliente'
+    : usuario?.nome || 'Cliente';
+
+  const clienteCepPreenchimento = souPrestadorDoChat
+    ? outroUsuario?.cep || ''
+    : usuario?.cep || '';
+
+  const prestadorNomePreenchimento = souPrestadorDoChat
+    ? usuario?.nome || 'Prestador'
+    : outroUsuario?.nome || 'Prestador';
 
   return (
     <Flex direction="column" minH="100vh" bg="vemfix.pageBg">
@@ -366,7 +462,7 @@ export default function Chat() {
           {/* Topo da Conversa (Chat Header) */}
           <Flex
             align="center"
-            gap={3}
+            justify="space-between"
             px={{ base: 3.5, md: 4 }}
             py={3}
             borderBottom="1px solid"
@@ -374,80 +470,106 @@ export default function Chat() {
             bg="white"
             flexShrink={0}
           >
-            {/* Botão de Voltar */}
-            <IconButton
-              aria-label="Voltar"
-              icon={<FaArrowLeft />}
-              variant="ghost"
-              size="sm"
-              color="gray.400"
-              _hover={{ color: 'vemfix.green', bg: 'gray.50' }}
-              onClick={() => navigate(-1)}
-            />
+            {/* Lado Esquerdo: Voltar + Avatar + Dados do Usuário */}
+            <HStack spacing={3} minW={0} flex={1}>
+              <IconButton
+                aria-label="Voltar"
+                icon={<FaArrowLeft />}
+                variant="ghost"
+                size="sm"
+                color="gray.400"
+                _hover={{ color: 'vemfix.green', bg: 'gray.50' }}
+                onClick={() => navigate(-1)}
+              />
 
-            {/* Avatar do outro usuário */}
-            <Flex
-              w="38px"
-              h="38px"
-              minW="38px"
-              borderRadius="full"
-              bg={outroUsuario?.tipo === 'prestador' ? 'vemfix.greenLight' : 'blue.50'}
-              color={outroUsuario?.tipo === 'prestador' ? 'vemfix.green' : 'blue.600'}
-              fontWeight="800"
-              fontSize="13px"
-              align="center"
-              justify="center"
-              flexShrink={0}
-            >
-              {getIniciais(outroUsuario?.nome)}
-            </Flex>
-
-            {/* Informações: Nome + Tag + Categoria (logo após o nome, sem 'Online') */}
-            <HStack spacing={2} align="center" flexWrap="nowrap" overflow="hidden">
-              <Text
-                fontSize="14.5px"
-                fontWeight="700"
-                color="vemfix.dark"
-                whiteSpace="nowrap"
+              <Flex
+                w="38px"
+                h="38px"
+                minW="38px"
+                borderRadius="full"
+                bg={outroUsuario?.tipo === 'prestador' ? 'vemfix.greenLight' : 'blue.50'}
+                color={outroUsuario?.tipo === 'prestador' ? 'vemfix.green' : 'blue.600'}
+                fontWeight="800"
+                fontSize="13px"
+                align="center"
+                justify="center"
+                flexShrink={0}
               >
-                {outroUsuario?.nome || 'Carregando...'}
-              </Text>
+                {getIniciais(outroUsuario?.nome)}
+              </Flex>
 
-              {outroUsuario?.tipo === 'prestador' ? (
-                <HStack
-                  spacing={1.5}
-                  fontSize="12px"
-                  color="vemfix.graySubtitle"
+              <HStack spacing={2} align="center" flexWrap="nowrap" overflow="hidden" minW={0}>
+                <Text
+                  fontSize="14.5px"
+                  fontWeight="700"
+                  color="vemfix.dark"
                   whiteSpace="nowrap"
-                  align="center"
+                  isTruncated
                 >
-                  <Text color="vemfix.green" fontWeight="600">
-                    Prestador
-                  </Text>
-                  {outroUsuario.catServico && (
-                    <>
-                      <Text color="gray.300">•</Text>
-                      <Text>{outroUsuario.catServico}</Text>
-                    </>
-                  )}
-                </HStack>
-              ) : outroUsuario?.tipo === 'cliente' ? (
-                <HStack
-                  spacing={1.5}
-                  fontSize="12px"
-                  color="vemfix.graySubtitle"
-                  whiteSpace="nowrap"
-                  align="center"
-                >
-                  <Text color="blue.600" fontWeight="600">
-                    Cliente
-                  </Text>
-                </HStack>
-              ) : null}
+                  {outroUsuario?.nome || 'Carregando...'}
+                </Text>
+
+                {outroUsuario?.tipo === 'prestador' ? (
+                  <HStack
+                    spacing={1.5}
+                    fontSize="12px"
+                    color="vemfix.graySubtitle"
+                    whiteSpace="nowrap"
+                    align="center"
+                  >
+                    <Text color="vemfix.green" fontWeight="600">
+                      Prestador
+                    </Text>
+                    {outroUsuario.catServico && (
+                      <>
+                        <Text color="gray.300">•</Text>
+                        <Text>{outroUsuario.catServico}</Text>
+                      </>
+                    )}
+                  </HStack>
+                ) : outroUsuario?.tipo === 'cliente' ? (
+                  <HStack
+                    spacing={1.5}
+                    fontSize="12px"
+                    color="vemfix.graySubtitle"
+                    whiteSpace="nowrap"
+                    align="center"
+                  >
+                    <Text color="blue.600" fontWeight="600">
+                      Cliente
+                    </Text>
+                  </HStack>
+                ) : null}
+              </HStack>
             </HStack>
+
+            {/* Lado Direito: Ícone de Acesso Rápido ao Último Orçamento (caso exista pelo menos 1) */}
+            {orcamentos.length > 0 && (
+              <Button
+                leftIcon={<FaFilePdf />}
+                size="sm"
+                bg="red.50"
+                color="red.600"
+                border="1px solid"
+                borderColor="red.200"
+                _hover={{ bg: 'red.100', transform: 'scale(1.02)' }}
+                borderRadius="full"
+                px={3}
+                h="32px"
+                fontSize="12px"
+                fontWeight="800"
+                boxShadow="0 1px 3px rgba(229, 62, 62, 0.12)"
+                onClick={() => handleExpandirOrcamento(orcamentos[0])}
+                title="Clique para visualizar o último orçamento elaborado"
+                flexShrink={0}
+                ml={2}
+              >
+                Orçamento
+              </Button>
+            )}
           </Flex>
 
-          {/* Área das Mensagens */}
+          {/* Área das Mensagens e Orçamentos */}
           <Box
             flex={1}
             overflowY="auto"
@@ -455,27 +577,46 @@ export default function Chat() {
             bg="vemfix.pageBg"
             display="flex"
             flexDirection="column"
-            gap={3}
+            gap={3.5}
           >
             {carregando ? (
               <Flex justify="center" align="center" h="100%">
                 <Spinner size="md" color="vemfix.green" />
               </Flex>
-            ) : mensagens.length === 0 ? (
+            ) : timelineItens.length === 0 ? (
               <Flex justify="center" align="center" h="100%">
                 <Text fontSize="13px" color="vemfix.graySubtitle">
                   Inicie a conversa enviando uma mensagem abaixo.
                 </Text>
               </Flex>
             ) : (
-              mensagens.map((msg, index) => {
+              timelineItens.map((item) => {
+                if (item.tipoItem === 'ORCAMENTO') {
+                  const orc = item.dados;
+                  // O orçamento foi emitido pelo prestador contratado da conversa
+                  // Se eu sou o prestador contratado, alinha à direita; se sou o cliente, à esquerda
+                  return (
+                    <Box
+                      key={item.id}
+                      alignSelf={souPrestadorDoChat ? 'flex-end' : 'flex-start'}
+                    >
+                      <OrcamentoCard
+                        orcamento={orc}
+                        onExpand={handleExpandirOrcamento}
+                      />
+                    </Box>
+                  );
+                }
+
+                // Tipo: MENSAGEM
+                const msg = item.dados;
                 const ehMinha = souPrestadorDoChat
                   ? msg.remetenteTipo?.toUpperCase() === 'PRESTADOR'
                   : msg.remetenteTipo?.toUpperCase() === 'CLIENTE';
 
                 return (
                   <Box
-                    key={msg.id || index}
+                    key={item.id}
                     alignSelf={ehMinha ? 'flex-end' : 'flex-start'}
                     maxW={{ base: '82%', sm: '75%' }}
                   >
@@ -557,7 +698,7 @@ export default function Chat() {
               onClick={() =>
                 toast({
                   title: 'Anexo',
-                  description: 'Envio de anexos estará disponível em breve.',
+                  description: 'Envio de anexos diretos estará disponível em breve.',
                   status: 'info',
                   duration: 2500,
                   isClosable: true,
@@ -565,7 +706,7 @@ export default function Chat() {
               }
             />
 
-            {/* O botão de enviar orçamento só aparece para o Prestador prestador do serviço nesta conversa */}
+            {/* O botão de enviar orçamento só aparece para o Prestador contratado nesta conversa */}
             {souPrestadorDoChat && (
               <IconButton
                 aria-label="Orçamento"
@@ -577,15 +718,12 @@ export default function Chat() {
                 minW="36px"
                 color="gray.500"
                 _hover={{ bg: 'gray.100', color: 'vemfix.green' }}
-                onClick={() =>
-                  toast({
-                    title: 'Orçamento',
-                    description: 'Funcionalidade de orçamento estará disponível em breve.',
-                    status: 'info',
-                    duration: 2500,
-                    isClosable: true,
-                  })
-                }
+                onClick={() => {
+                  setModoModalOrcamento('elaborar');
+                  setOrcamentoSelecionado(orcamentos.length > 0 ? orcamentos[0] : null);
+                  setIsOrcamentoModalOpen(true);
+                }}
+                title="Elaborar Orçamento"
               />
             )}
 
@@ -608,6 +746,19 @@ export default function Chat() {
           </Flex>
         </Box>
       </Flex>
+
+      {/* Modal de Elaboração ou Visualização Expandida de Orçamento */}
+      <OrcamentoModal
+        isOpen={isOrcamentoModalOpen}
+        onClose={() => setIsOrcamentoModalOpen(false)}
+        modo={modoModalOrcamento}
+        chatId={currentChatId}
+        clienteNome={clienteNomePreenchimento}
+        clienteCep={clienteCepPreenchimento}
+        prestadorNome={prestadorNomePreenchimento}
+        orcamento={orcamentoSelecionado}
+        onEnviar={handleEnviarOrcamento}
+      />
     </Flex>
   );
 }

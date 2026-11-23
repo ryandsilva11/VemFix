@@ -50,7 +50,7 @@ public class PrestadorService {
             prestador.setNome(dto.nome());
         }
         prestador.setTelefone(dto.telefone());
-        prestador.setCidade(dto.cidade());
+        prestador.setCep(dto.cep());
         if (dto.senha() != null && !dto.senha().isBlank()) {
             prestador.setSenha(dto.senha());
         }

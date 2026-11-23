@@ -50,7 +50,7 @@ const FAQ_ITEMS = [
   {
     pergunta: 'Como sei se o prestador é confiável?',
     resposta:
-      'No VemFix, você pode visualizar as avaliações com nota média por estrelas, ver os trabalhos já publicados pelo profissional e conferir a cidade de atuação antes de solicitar um serviço.',
+      'No VemFix, você pode visualizar as avaliações com nota média por estrelas, ver os trabalhos já publicados pelo profissional e conferir a região de atuação pelo CEP antes de solicitar um serviço.',
   },
 ];
 

@@ -197,15 +197,15 @@ export default function PerfilCliente() {
                       </Badge>
                     </HStack>
 
-                    {/* Cidade do Cliente */}
-                    {cliente.cidade && (
+                    {/* CEP do Cliente */}
+                    {cliente.cep && (
                       <Text
                         fontSize="15px"
                         fontWeight="500"
                         color="whiteAlpha.900"
                         mt={1.5}
                       >
-                        {cliente.cidade}
+                        CEP: {cliente.cep}
                       </Text>
                     )}
                   </Box>

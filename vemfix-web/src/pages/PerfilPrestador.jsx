@@ -229,7 +229,7 @@ export default function PerfilPrestador() {
                         </HStack>
                       </HStack>
 
-                      {/* Categoria e Cidade Aumentadas e Sem Emojis */}
+                      {/* Categoria e CEP Aumentadas e Sem Emojis */}
                       <Text
                         fontSize="15px"
                         fontWeight="500"
@@ -237,7 +237,7 @@ export default function PerfilPrestador() {
                         mt={1}
                       >
                         {prestador.catServico || 'Prestador de Serviços'}
-                        {prestador.cidade && ` • ${prestador.cidade}`}
+                        {prestador.cep && ` • CEP: ${prestador.cep}`}
                       </Text>
                     </Box>
                   </HStack>

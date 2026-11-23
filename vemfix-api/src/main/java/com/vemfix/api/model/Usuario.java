@@ -30,8 +30,8 @@ public class Usuario {
     @Column(length = 20)
     private String telefone;
 
-    @Column(length = 50)
-    private String cidade;
+    @Column(length = 20)
+    private String cep;
 
     @Column
     private LocalDate dataNasc;
@@ -92,12 +92,12 @@ public class Usuario {
         this.telefone = telefone;
     }
 
-    public String getCidade() {
-        return cidade;
+    public String getCep() {
+        return cep;
     }
 
-    public void setCidade(String cidade) {
-        this.cidade = cidade;
+    public void setCep(String cep) {
+        this.cep = cep;
     }
 
     public LocalDate getDataNasc() {

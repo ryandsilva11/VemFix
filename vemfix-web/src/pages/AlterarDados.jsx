@@ -51,7 +51,7 @@ export default function AlterarDados() {
 
   const [form, setForm] = useState({
     telefone: '',
-    cidade: '',
+    cep: '',
     catServico: 'Encanador',
     exp: '',
     senhaAtual: '',
@@ -90,7 +90,7 @@ export default function AlterarDados() {
         setForm((prev) => ({
           ...prev,
           telefone: dados.telefone || '',
-          cidade: dados.cidade || '',
+          cep: dados.cep || '',
           catServico: ehOutro ? 'Outro' : dados.catServico || 'Encanador',
           exp: dados.exp || '',
         }));
@@ -120,8 +120,8 @@ export default function AlterarDados() {
       return;
     }
 
-    if (!form.cidade.trim()) {
-      setErro('A cidade é obrigatória.');
+    if (!form.cep.trim()) {
+      setErro('O CEP é obrigatório.');
       return;
     }
 
@@ -171,7 +171,7 @@ export default function AlterarDados() {
         ? {
             nome: usuario.nome,
             telefone: telefoneLimpo,
-            cidade: form.cidade.trim(),
+            cep: form.cep.trim(),
             catServico: categoriaFinal,
             exp: form.exp || '',
             ...(querAlterarSenha ? { senha: form.novaSenha } : {}),
@@ -179,7 +179,7 @@ export default function AlterarDados() {
         : {
             nome: usuario.nome,
             telefone: telefoneLimpo,
-            cidade: form.cidade.trim(),
+            cep: form.cep.trim(),
             ...(querAlterarSenha ? { senha: form.novaSenha } : {}),
           };
 
@@ -314,13 +314,13 @@ export default function AlterarDados() {
 
                 <FormControl isRequired>
                   <FormLabel fontSize="13px" fontWeight="600" color="vemfix.dark">
-                    Cidade
+                    CEP
                   </FormLabel>
                   <Input
-                    name="cidade"
-                    value={form.cidade}
+                    name="cep"
+                    value={form.cep}
                     onChange={handleChange}
-                    placeholder="Sua cidade"
+                    placeholder="00000-000"
                     focusBorderColor="vemfix.green"
                   />
                 </FormControl>

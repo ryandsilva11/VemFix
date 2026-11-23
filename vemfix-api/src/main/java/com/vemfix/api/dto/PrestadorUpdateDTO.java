@@ -10,8 +10,8 @@ public record PrestadorUpdateDTO(
         @Size(min = 10, max = 11, message = "O telefone deve ter entre 10 e 11 dígitos")
         String telefone,
 
-        @NotBlank(message = "A cidade é obrigatória")
-        String cidade,
+        @NotBlank(message = "O CEP é obrigatório")
+        String cep,
 
         String senha,
 

@@ -65,7 +65,7 @@ export default function Header() {
         nome: c.nome,
         tipo: 'cliente',
         prefixo: 'c/',
-        cidade: c.cidade,
+        cep: c.cep,
       }));
 
       const listaPrestadores = (resPrestadores.data || []).map((p) => ({
@@ -74,7 +74,7 @@ export default function Header() {
         tipo: 'prestador',
         prefixo: 'p/',
         catServico: p.catServico || '',
-        cidade: p.cidade,
+        cep: p.cep,
         avaliacao: parseAvaliacao(p.avaliacao),
       }));
 
@@ -401,10 +401,10 @@ export default function Header() {
                                     <Text>{u.catServico}</Text>
                                   </>
                                 )}
-                                {u.cidade && (
+                                {u.cep && (
                                   <>
                                     <Text color="gray.300">•</Text>
-                                    <Text>{u.cidade}</Text>
+                                    <Text>CEP {u.cep}</Text>
                                   </>
                                 )}
                                 <HStack spacing={1} color="orange.400" fontWeight="700" pl={0.5}>
@@ -423,10 +423,10 @@ export default function Header() {
                                 <Text color="blue.600" fontWeight="600">
                                   Cliente
                                 </Text>
-                                {u.cidade && (
+                                {u.cep && (
                                   <>
                                     <Text color="gray.300">•</Text>
-                                    <Text>{u.cidade}</Text>
+                                    <Text>CEP {u.cep}</Text>
                                   </>
                                 )}
                               </HStack>
