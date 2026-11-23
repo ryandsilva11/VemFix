@@ -24,7 +24,7 @@ public class Post {
     @Column(nullable = false, length = 100)
     private String titulo;
 
-    @Column(length = 2048)
+    @Column(columnDefinition = "LONGTEXT")
     private String anexo;
 
     @Column(nullable = false, length = 1000)
