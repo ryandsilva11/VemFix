@@ -26,10 +26,10 @@ public class Mensagem {
     @Column(nullable = false, length = 20)
     private String remetenteTipo;
 
-    @Column(nullable = false, length = 1000)
+    @Column(nullable = true, length = 1000)
     private String conteudo;
 
-    @Column(length = 2048)
+    @Column(columnDefinition = "LONGTEXT")
     private String anexo;
 
     @Column(nullable = false)

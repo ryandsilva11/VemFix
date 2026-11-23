@@ -3,10 +3,16 @@ import {
   Box,
   Flex,
   HStack,
+  VStack,
   Text,
   Input,
   IconButton,
   Button,
+  Image,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalBody,
   Spinner,
   useToast,
 } from '@chakra-ui/react';
@@ -16,6 +22,7 @@ import {
   FaPaperclip,
   FaDollarSign,
   FaFilePdf,
+  FaTimes,
 } from 'react-icons/fa';
 import { useNavigate, useParams } from 'react-router-dom';
 import Header from '../components/Header';
@@ -43,6 +50,11 @@ export default function Chat() {
   const [isOrcamentoModalOpen, setIsOrcamentoModalOpen] = useState(false);
   const [modoModalOrcamento, setModoModalOrcamento] = useState('elaborar');
   const [orcamentoSelecionado, setOrcamentoSelecionado] = useState(null);
+
+  // Estados de Imagem Anexada e Visualizador
+  const [imagemAnexo, setImagemAnexo] = useState('');
+  const [imagemModal, setImagemModal] = useState('');
+  const fileInputRef = useRef(null);
 
   const messagesEndRef = useRef(null);
 
@@ -158,6 +170,7 @@ export default function Chat() {
             id: m.id,
             remetenteTipo: m.remetenteTipo,
             conteudo: m.conteudo,
+            anexo: m.anexo,
             dataEnvio: m.dataEnvio,
             horario: formatarHorario(m.dataEnvio),
           }));
@@ -211,6 +224,7 @@ export default function Chat() {
                 id: m.id,
                 remetenteTipo: m.remetenteTipo,
                 conteudo: m.conteudo,
+                anexo: m.anexo,
                 dataEnvio: m.dataEnvio,
                 horario: formatarHorario(m.dataEnvio),
               }));
@@ -275,6 +289,7 @@ export default function Chat() {
               id: m.id,
               remetenteTipo: m.remetenteTipo,
               conteudo: m.conteudo,
+              anexo: m.anexo,
               dataEnvio: m.dataEnvio,
               horario: formatarHorario(m.dataEnvio),
             }));
@@ -302,11 +317,46 @@ export default function Chat() {
     };
   }, [currentChatId]);
 
-  // Envio de nova mensagem de texto
+  // Seleção e conversão de imagem para envio no chat
+  const handleSelecionarImagem = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Formato inválido',
+        description: 'Por favor, selecione um arquivo de imagem.',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      toast({
+        title: 'Arquivo muito grande',
+        description: 'A imagem deve ter no máximo 8MB.',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImagemAnexo(reader.result);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  // Envio de nova mensagem (texto e/ou imagem)
   const handleEnviarMensagem = async (e) => {
     if (e) e.preventDefault();
     const texto = novaMensagem.trim();
-    if (!texto || enviando) return;
+    if ((!texto && !imagemAnexo) || enviando) return;
 
     setEnviando(true);
     try {
@@ -340,19 +390,22 @@ export default function Chat() {
 
       const resMsg = await api.post(`/mensagens/${idChatAtual}`, {
         remetenteTipo,
-        conteudo: texto,
+        conteudo: texto || '',
+        anexo: imagemAnexo || null,
       });
 
       const nova = {
         id: resMsg.data.id,
         remetenteTipo: resMsg.data.remetenteTipo,
         conteudo: resMsg.data.conteudo,
+        anexo: resMsg.data.anexo,
         dataEnvio: resMsg.data.dataEnvio,
         horario: formatarHorario(resMsg.data.dataEnvio),
       };
 
       setMensagens((prev) => [...prev, nova]);
       setNovaMensagem('');
+      setImagemAnexo('');
     } catch (err) {
       console.error('Erro ao enviar mensagem:', err);
       toast({
@@ -643,6 +696,11 @@ export default function Chat() {
                   ? msg.remetenteTipo?.toUpperCase() === 'PRESTADOR'
                   : msg.remetenteTipo?.toUpperCase() === 'CLIENTE';
 
+                const temFotoMsg =
+                  msg.anexo &&
+                  msg.anexo.trim() !== '' &&
+                  msg.anexo !== 'string';
+
                 return (
                   <Box
                     key={item.id}
@@ -652,8 +710,8 @@ export default function Chat() {
                     <Box
                       bg={ehMinha ? 'vemfix.green' : 'white'}
                       color={ehMinha ? 'white' : 'vemfix.dark'}
-                      px={3.5}
-                      py={2.5}
+                      p={temFotoMsg && !msg.conteudo ? 1.5 : 2.5}
+                      px={temFotoMsg && !msg.conteudo ? 1.5 : 3.5}
                       borderRadius={
                         ehMinha
                           ? '14px 4px 14px 14px'
@@ -664,7 +722,32 @@ export default function Chat() {
                       lineHeight="1.5"
                       wordBreak="break-word"
                     >
-                      {msg.conteudo}
+                      {temFotoMsg && (
+                        <Box
+                          borderRadius="10px"
+                          overflow="hidden"
+                          mb={msg.conteudo ? 2 : 0}
+                          cursor="pointer"
+                          onClick={() => setImagemModal(msg.anexo)}
+                          _hover={{ opacity: 0.95 }}
+                          transition="opacity 0.2s"
+                        >
+                          <Image
+                            src={msg.anexo}
+                            alt="Foto enviada"
+                            maxH="260px"
+                            w="100%"
+                            objectFit="cover"
+                            borderRadius="8px"
+                          />
+                        </Box>
+                      )}
+
+                      {msg.conteudo && (
+                        <Text px={temFotoMsg ? 1 : 0}>
+                          {msg.conteudo}
+                        </Text>
+                      )}
                     </Box>
                     {msg.horario && (
                       <Text
@@ -684,6 +767,50 @@ export default function Chat() {
             <div ref={messagesEndRef} />
           </Box>
 
+          {/* Pré-visualização da imagem selecionada para envio */}
+          {imagemAnexo && (
+            <Flex
+              align="center"
+              justify="space-between"
+              px={3.5}
+              py={2}
+              bg="gray.50"
+              borderTop="1px solid"
+              borderColor="vemfix.border"
+            >
+              <HStack spacing={2.5}>
+                <Image
+                  src={imagemAnexo}
+                  alt="Pré-visualização do anexo"
+                  boxSize="42px"
+                  objectFit="cover"
+                  borderRadius="8px"
+                  border="1px solid"
+                  borderColor="gray.200"
+                />
+                <VStack align="flex-start" spacing={0}>
+                  <Text fontSize="12px" fontWeight="700" color="vemfix.dark">
+                    Imagem anexada
+                  </Text>
+                  <Text fontSize="10.5px" color="vemfix.graySubtitle">
+                    Pronta para envio
+                  </Text>
+                </VStack>
+              </HStack>
+
+              <IconButton
+                aria-label="Remover imagem"
+                icon={<FaTimes size={11} />}
+                size="xs"
+                variant="ghost"
+                color="red.500"
+                borderRadius="full"
+                onClick={() => setImagemAnexo('')}
+                title="Remover anexo"
+              />
+            </Flex>
+          )}
+
           {/* Barra de Entrada de Mensagem */}
           <Flex
             as="form"
@@ -696,6 +823,14 @@ export default function Chat() {
             borderColor="vemfix.border"
             flexShrink={0}
           >
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              onChange={handleSelecionarImagem}
+            />
+
             <Input
               value={novaMensagem}
               onChange={(e) => setNovaMensagem(e.target.value)}
@@ -715,24 +850,18 @@ export default function Chat() {
             />
 
             <IconButton
-              aria-label="Anexar arquivo"
+              aria-label="Anexar imagem"
               icon={<FaPaperclip size={14} />}
               variant="ghost"
               borderRadius="full"
               w="36px"
               h="36px"
               minW="36px"
-              color="gray.500"
+              color={imagemAnexo ? 'vemfix.green' : 'gray.500'}
+              bg={imagemAnexo ? 'vemfix.greenLight' : 'transparent'}
               _hover={{ bg: 'gray.100', color: 'vemfix.green' }}
-              onClick={() =>
-                toast({
-                  title: 'Anexo',
-                  description: 'Envio de anexos diretos estará disponível em breve.',
-                  status: 'info',
-                  duration: 2500,
-                  isClosable: true,
-                })
-              }
+              onClick={() => fileInputRef.current?.click()}
+              title="Anexar imagem"
             />
 
             {/* O botão de enviar orçamento só aparece para o Prestador contratado nesta conversa */}
@@ -768,13 +897,43 @@ export default function Chat() {
               minW="36px"
               _hover={{ bg: 'vemfix.greenDark', transform: 'scale(1.05)' }}
               _active={{ bg: 'vemfix.greenDark' }}
-              isDisabled={!novaMensagem.trim() || enviando}
+              isDisabled={(!novaMensagem.trim() && !imagemAnexo) || enviando}
               isLoading={enviando}
               transition="all 0.2s"
             />
           </Flex>
         </Box>
       </Flex>
+
+      {/* Modal para Visualização da Imagem em Tamanho Cheio */}
+      <Modal isOpen={Boolean(imagemModal)} onClose={() => setImagemModal('')} size="3xl" isCentered>
+        <ModalOverlay bg="blackAlpha.800" backdropFilter="blur(5px)" />
+        <ModalContent bg="transparent" boxShadow="none" maxW="90vw" my={2}>
+          <ModalBody p={0} position="relative" display="flex" justifyContent="center">
+            <IconButton
+              aria-label="Fechar"
+              icon={<FaTimes />}
+              position="absolute"
+              top={-10}
+              right={0}
+              color="white"
+              bg="blackAlpha.600"
+              _hover={{ bg: 'blackAlpha.800' }}
+              borderRadius="full"
+              size="sm"
+              onClick={() => setImagemModal('')}
+            />
+            <Image
+              src={imagemModal}
+              alt="Visualização da imagem"
+              maxH="82vh"
+              maxW="100%"
+              borderRadius="12px"
+              objectFit="contain"
+            />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
       {/* Modal de Elaboração ou Visualização Expandida de Orçamento */}
       <OrcamentoModal
