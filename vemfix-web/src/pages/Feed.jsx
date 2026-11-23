@@ -30,18 +30,24 @@ export default function Feed() {
     isAutenticado &&
     (usuario?.tipo?.toUpperCase() === 'PRESTADOR' || Boolean(usuario?.catServico));
 
-  // Executa uma vez assim que a tela de Feed é montada no navegador
+  // Executa ao montar o componente ou quando o usuário logado mudar
   useEffect(() => {
     carregarPosts();
-  }, []);
+  }, [usuario?.id, usuario?.tipo]);
 
   const carregarPosts = async () => {
     try {
       setLoading(true);
       setErro(null);
 
-      // Chamada GET para /posts
-      const response = await api.get('/posts');
+      const params = {};
+      if (usuario?.id && usuario?.tipo) {
+        params.usuarioId = usuario.id;
+        params.tipo = usuario.tipo;
+      }
+
+      // Chamada GET para /posts informando o usuário logado para carregar o status de curtida
+      const response = await api.get('/posts', { params });
       setPosts(response.data || []);
     } catch (error) {
       console.error('Erro ao buscar posts da API:', error);
@@ -53,7 +59,7 @@ export default function Feed() {
 
   const handlePostCriado = (novoPost) => {
     // Insere o post criado no topo da lista do feed imediatamente
-    setPosts((prevPosts) => [novoPost, ...prevPosts]);
+    setPosts((prevPosts) => [{ ...novoPost, curtido: false, curtidas: 0 }, ...prevPosts]);
   };
 
   return (

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Flex, HStack, Text, Icon, Image, useToast } from '@chakra-ui/react';
 import { FaStar, FaHeart } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
@@ -8,11 +8,18 @@ import api from '../services/api';
 export default function PostCard({ post }) {
   const navigate = useNavigate();
   const toast = useToast();
-  const { isAutenticado } = useAuth();
+  const { isAutenticado, usuario } = useAuth();
 
-  const [curtido, setCurtido] = useState(false);
+  const [curtido, setCurtido] = useState(Boolean(post?.curtido));
   const [curtidas, setCurtidas] = useState(post?.curtidas || 0);
   const [imagemErro, setImagemErro] = useState(false);
+  const [loadingCurtida, setLoadingCurtida] = useState(false);
+
+  // Mantém os estados sincronizados se as props do post mudarem (ao atualizar o feed)
+  useEffect(() => {
+    setCurtido(Boolean(post?.curtido));
+    setCurtidas(post?.curtidas || 0);
+  }, [post?.curtido, post?.curtidas]);
 
   // Extrai iniciais do nome do prestador quando houver
   const getIniciais = (nome) => {
@@ -42,25 +49,56 @@ export default function PostCard({ post }) {
     }
   };
 
-  // Envia a curtida para a API e persiste no banco de dados (exige login)
-  const toggleCurtir = async () => {
-    if (!isAutenticado) {
+  // Alterna entre curtir e descurtir o post na conta do usuário logado
+  const toggleCurtir = async (e) => {
+    e?.stopPropagation();
+
+    if (!isAutenticado || !usuario) {
       navigate('/cadastro');
       return;
     }
 
-    if (!curtido && post?.id) {
-      try {
-        const response = await api.patch(`/posts/${post.id}`);
-        if (response.data && response.data.curtidas != null) {
+    if (loadingCurtida || !post?.id) return;
+
+    // Alternância otimista imediata na interface
+    const proximoCurtido = !curtido;
+    const proximaQtd = proximoCurtido ? curtidas + 1 : Math.max(0, curtidas - 1);
+
+    setCurtido(proximoCurtido);
+    setCurtidas(proximaQtd);
+    setLoadingCurtida(true);
+
+    try {
+      const response = await api.patch(`/posts/${post.id}`, null, {
+        params: {
+          usuarioId: usuario.id,
+          tipo: usuario.tipo,
+        },
+      });
+
+      if (response.data) {
+        if (response.data.curtidas != null) {
           setCurtidas(response.data.curtidas);
-        } else {
-          setCurtidas((prev) => prev + 1);
         }
-        setCurtido(true);
-      } catch (error) {
-        console.error('Erro ao registrar curtida na API:', error);
+        if (response.data.curtido != null) {
+          setCurtido(Boolean(response.data.curtido));
+        }
       }
+    } catch (error) {
+      console.error('Erro ao alternar curtida na API:', error);
+      // Reverte alteração otimista em caso de erro na comunicação
+      setCurtido(!proximoCurtido);
+      setCurtidas(curtidas);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível atualizar a curtida. Tente novamente.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+        position: 'top',
+      });
+    } finally {
+      setLoadingCurtida(false);
     }
   };
 
@@ -233,7 +271,7 @@ export default function PostCard({ post }) {
         >
           <Icon
             as={FaHeart}
-            color={curtido ? 'vemfix.heart' : 'vemfix.heart'}
+            color={curtido ? 'vemfix.heart' : 'gray.400'}
             w={4}
             h={4}
           />
@@ -241,7 +279,7 @@ export default function PostCard({ post }) {
             fontFamily="heading"
             fontSize="14px"
             fontWeight="700"
-            color="vemfix.dark"
+            color={curtido ? 'red.600' : 'vemfix.dark'}
           >
             {curtidas.toLocaleString('pt-BR')}
           </Text>

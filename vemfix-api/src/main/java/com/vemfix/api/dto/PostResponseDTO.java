@@ -12,7 +12,9 @@ public record PostResponseDTO(
         String descricao,
         LocalDateTime dataCriacao,
         Long curtidas,
-        Prestador prestador) {
+        Prestador prestador,
+        Boolean curtido) {
+
     public PostResponseDTO(Post post) {
         this(
                 post.getId(),
@@ -20,7 +22,20 @@ public record PostResponseDTO(
                 post.getAnexo(),
                 post.getDescricao(),
                 post.getDataCriacao(),
-                post.getCurtidas(),
-                post.getPrestador());
+                post.getCurtidas() != null ? post.getCurtidas() : 0L,
+                post.getPrestador(),
+                false);
+    }
+
+    public PostResponseDTO(Post post, Boolean curtido) {
+        this(
+                post.getId(),
+                post.getTitulo(),
+                post.getAnexo(),
+                post.getDescricao(),
+                post.getDataCriacao(),
+                post.getCurtidas() != null ? post.getCurtidas() : 0L,
+                post.getPrestador(),
+                curtido != null ? curtido : false);
     }
 }

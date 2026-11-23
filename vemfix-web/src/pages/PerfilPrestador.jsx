@@ -49,12 +49,18 @@ export default function PerfilPrestador() {
         const resPrestador = await api.get(`/prestadores/${id}`);
         setPrestador(resPrestador.data);
 
+        const params = {};
+        if (usuario?.id && usuario?.tipo) {
+          params.usuarioId = usuario.id;
+          params.tipo = usuario.tipo;
+        }
+
         // 2. Busca os posts do prestador (tenta endpoint específico ou filtra todos)
         try {
-          const resPosts = await api.get(`/posts/prestador/${id}`);
+          const resPosts = await api.get(`/posts/prestador/${id}`, { params });
           setPosts(resPosts.data || []);
         } catch {
-          const resTodosPosts = await api.get('/posts');
+          const resTodosPosts = await api.get('/posts', { params });
           const postsFiltrados = (resTodosPosts.data || []).filter(
             (p) => p.prestador?.id === Number(id)
           );
@@ -71,7 +77,7 @@ export default function PerfilPrestador() {
     if (id) {
       carregarDados();
     }
-  }, [id]);
+  }, [id, usuario?.id, usuario?.tipo]);
 
   const isUsuarioPrestador =
     usuario?.tipo?.toUpperCase() === 'PRESTADOR' || Boolean(usuario?.catServico);
