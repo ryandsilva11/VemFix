@@ -33,12 +33,68 @@ export default function Feed() {
   // Executa ao montar o componente ou quando o usuário logado mudar
   useEffect(() => {
     carregarPosts();
+
+    // 1. Sincronização instantânea em tempo real entre abas no mesmo navegador
+    let canal;
+    try {
+      canal = new BroadcastChannel('vemfix_posts_channel');
+      canal.onmessage = (event) => {
+        if (event.data?.type === 'POST_ATUALIZADO') {
+          const { postId, curtidas, curtidoPorUsuarioId, curtido } = event.data;
+          setPosts((prevPosts) =>
+            prevPosts.map((p) => {
+              if (p.id === postId) {
+                const ehMeuUsuario = usuario?.id === curtidoPorUsuarioId;
+                return {
+                  ...p,
+                  curtidas,
+                  curtido: ehMeuUsuario ? curtido : p.curtido,
+                };
+              }
+              return p;
+            })
+          );
+        } else if (event.data?.type === 'NOVO_POST') {
+          carregarPosts(true);
+        }
+      };
+    } catch {
+      // Ignora se indisponível
+    }
+
+    // 2. Atualização automática ao focar ou voltar para a aba
+    const handleVisivel = () => {
+      if (document.visibilityState === 'visible') {
+        carregarPosts(true);
+      }
+    };
+    const handleFocus = () => {
+      carregarPosts(true);
+    };
+
+    document.addEventListener('visibilitychange', handleVisivel);
+    window.addEventListener('focus', handleFocus);
+
+    // 3. Polling suave periódico para refletir interações de usuários em computadores diferentes
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        carregarPosts(true);
+      }
+    }, 8000);
+
+    return () => {
+      if (canal) canal.close();
+      document.removeEventListener('visibilitychange', handleVisivel);
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
+    };
   }, [usuario?.id, usuario?.tipo]);
 
-  const carregarPosts = async () => {
+  // Carrega posts com suporte a atualização silenciosa (sem piscar a tela ou exibir spinner)
+  const carregarPosts = async (silencioso = false) => {
     try {
-      setLoading(true);
-      setErro(null);
+      if (!silencioso) setLoading(true);
+      if (!silencioso) setErro(null);
 
       const params = {};
       if (usuario?.id) {
@@ -54,10 +110,12 @@ export default function Feed() {
       const response = await api.get('/posts', { params });
       setPosts(response.data || []);
     } catch (error) {
-      console.error('Erro ao buscar posts da API:', error);
-      setErro('Não foi possível conectar com o servidor. Verifique se o backend está ligado na porta 8080.');
+      if (!silencioso) {
+        console.error('Erro ao buscar posts da API:', error);
+        setErro('Não foi possível conectar com o servidor. Verifique se o backend está ligado na porta 8080.');
+      }
     } finally {
-      setLoading(false);
+      if (!silencioso) setLoading(false);
     }
   };
 

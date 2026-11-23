@@ -40,9 +40,9 @@ export default function PerfilPrestador() {
   };
 
   useEffect(() => {
-    async function carregarDados() {
-      setLoading(true);
-      setErro(null);
+    async function carregarDados(silencioso = false) {
+      if (!silencioso) setLoading(true);
+      if (!silencioso) setErro(null);
 
       try {
         // 1. Busca os dados do prestador
@@ -71,15 +71,67 @@ export default function PerfilPrestador() {
           setPosts(postsFiltrados);
         }
       } catch (err) {
-        console.error('Erro ao carregar perfil do prestador:', err);
-        setErro('Não foi possível carregar os dados deste prestador.');
+        if (!silencioso) {
+          console.error('Erro ao carregar perfil do prestador:', err);
+          setErro('Não foi possível carregar os dados deste prestador.');
+        }
       } finally {
-        setLoading(false);
+        if (!silencioso) setLoading(false);
       }
     }
 
     if (id) {
       carregarDados();
+
+      // Sincronização entre abas
+      let canal;
+      try {
+        canal = new BroadcastChannel('vemfix_posts_channel');
+        canal.onmessage = (event) => {
+          if (event.data?.type === 'POST_ATUALIZADO') {
+            const { postId, curtidas, curtidoPorUsuarioId, curtido } = event.data;
+            setPosts((prevPosts) =>
+              prevPosts.map((p) => {
+                if (p.id === postId) {
+                  const ehMeuUsuario = usuario?.id === curtidoPorUsuarioId;
+                  return {
+                    ...p,
+                    curtidas,
+                    curtido: ehMeuUsuario ? curtido : p.curtido,
+                  };
+                }
+                return p;
+              })
+            );
+          }
+        };
+      } catch {}
+
+      // Atualização em foco/visibilidade
+      const handleVisivel = () => {
+        if (document.visibilityState === 'visible') {
+          carregarDados(true);
+        }
+      };
+      const handleFocus = () => {
+        carregarDados(true);
+      };
+
+      document.addEventListener('visibilitychange', handleVisivel);
+      window.addEventListener('focus', handleFocus);
+
+      const interval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          carregarDados(true);
+        }
+      }, 8000);
+
+      return () => {
+        if (canal) canal.close();
+        document.removeEventListener('visibilitychange', handleVisivel);
+        window.removeEventListener('focus', handleFocus);
+        clearInterval(interval);
+      };
     }
   }, [id, usuario?.id, usuario?.tipo]);
 

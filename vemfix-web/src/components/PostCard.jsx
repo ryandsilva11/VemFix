@@ -95,6 +95,21 @@ export default function PostCard({ post }) {
         if (response.data.curtido != null) {
           setCurtido(Boolean(response.data.curtido));
         }
+
+        // Sincroniza imediatamente com outras abas abertas no mesmo navegador
+        try {
+          const canal = new BroadcastChannel('vemfix_posts_channel');
+          canal.postMessage({
+            type: 'POST_ATUALIZADO',
+            postId: post.id,
+            curtidas: response.data.curtidas,
+            curtidoPorUsuarioId: usuario.id,
+            curtido: Boolean(response.data.curtido),
+          });
+          canal.close();
+        } catch {
+          // Ignora se BroadcastChannel não estiver disponível
+        }
       }
     } catch (error) {
       console.error('Erro ao alternar curtida na API:', error);

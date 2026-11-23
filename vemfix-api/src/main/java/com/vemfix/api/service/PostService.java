@@ -93,7 +93,8 @@ public class PostService {
         Cliente cliente = null;
         Prestador prestador = null;
 
-        // Resolve o usuário autenticado por tipo ou por existência no banco com fallback seguro
+        // Resolve o usuário autenticado por tipo ou por existência no banco com
+        // fallback seguro
         if ("CLIENTE".equalsIgnoreCase(tipo)) {
             cliente = clienteRepository.findById(usuarioId).orElse(null);
             if (cliente == null) {
