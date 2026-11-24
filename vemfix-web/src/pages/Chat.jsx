@@ -62,7 +62,10 @@ export default function Chat() {
     usuario?.tipo?.toUpperCase() === 'PRESTADOR' || Boolean(usuario?.catServico);
 
   // Define se o usuário atual é o prestador contratado/procurado nesta conversa específica
-  const souPrestadorDoChat = chatDados ? usuario?.id === chatDados.prestadorId : false;
+  // (Verifica obrigatoriamente se é PRESTADOR para não colidir com IDs idênticos de Clientes)
+  const souPrestadorDoChat = Boolean(
+    isPrestador && chatDados && Number(usuario?.id) === Number(chatDados.prestadorId)
+  );
 
   // Extrai as duas iniciais do nome
   const getIniciais = (nome) => {
@@ -129,7 +132,9 @@ export default function Chat() {
           const chat = resChat.data;
           setChatDados(chat);
 
-          const euSouPrestador = usuario.id === chat.prestadorId;
+          const euSouPrestador = Boolean(
+            isPrestador && Number(usuario.id) === Number(chat.prestadorId)
+          );
           let outroId, outroNome, outroTipo, catServico, outroCep;
 
           if (euSouPrestador) {
@@ -385,7 +390,9 @@ export default function Chat() {
         setCurrentChatId(idChatAtual);
       }
 
-      const souPrestadorNesteChat = dadosDoChat ? usuario.id === dadosDoChat.prestadorId : false;
+      const souPrestadorNesteChat = Boolean(
+        isPrestador && dadosDoChat && Number(usuario.id) === Number(dadosDoChat.prestadorId)
+      );
       const remetenteTipo = souPrestadorNesteChat ? 'PRESTADOR' : 'CLIENTE';
 
       const resMsg = await api.post(`/mensagens/${idChatAtual}`, {
