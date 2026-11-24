@@ -121,13 +121,22 @@ export default function Header() {
     });
   }, [termoBusca, usuarios]);
 
+  // Navegação segura: se já estiver na rota de destino, evita empilhar telas repetidas no histórico
+  const navegarSeguro = (destino) => {
+    if (location.pathname === destino) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    navigate(destino);
+  };
+
   const handleSelecionarUsuario = (u) => {
     setIsBuscando(false);
     setTermoBusca('');
     if (u.tipo === 'prestador') {
-      navigate(`/prestador/${u.id}`);
+      navegarSeguro(`/prestador/${u.id}`);
     } else if (u.tipo === 'cliente') {
-      navigate(`/cliente/${u.id}`);
+      navegarSeguro(`/cliente/${u.id}`);
     }
   };
 
@@ -142,19 +151,19 @@ export default function Header() {
     (usuario?.tipo?.toUpperCase() === 'PRESTADOR' || Boolean(usuario?.catServico));
 
   const handleMinhasConversas = () => {
-    navigate('/conversas');
+    navegarSeguro('/conversas');
   };
 
   const handlePerfil = () => {
     if (!isAutenticado) {
-      navigate('/cadastro');
+      navegarSeguro('/cadastro');
     } else {
       if (isPrestador && usuario?.id) {
-        navigate(`/prestador/${usuario.id}`);
+        navegarSeguro(`/prestador/${usuario.id}`);
       } else if (usuario?.id) {
-        navigate(`/cliente/${usuario.id}`);
+        navegarSeguro(`/cliente/${usuario.id}`);
       } else {
-        navigate('/');
+        navegarSeguro('/');
       }
     }
   };
@@ -187,7 +196,7 @@ export default function Header() {
             spacing={2.5}
             cursor="pointer"
             userSelect="none"
-            onClick={() => navigate('/')}
+            onClick={() => navegarSeguro('/')}
           >
             <Flex
               w="34px"
@@ -223,7 +232,7 @@ export default function Header() {
               color={isInicio ? 'vemfix.green' : 'vemfix.grayBody'}
               cursor="pointer"
               _hover={{ color: 'vemfix.green' }}
-              onClick={() => navigate('/')}
+              onClick={() => navegarSeguro('/')}
               transition="all 0.2s"
             >
               Início
@@ -245,7 +254,7 @@ export default function Header() {
               color={isSuporte ? 'vemfix.green' : 'vemfix.grayBody'}
               cursor="pointer"
               _hover={{ color: 'vemfix.green' }}
-              onClick={() => navigate('/suporte')}
+              onClick={() => navegarSeguro('/suporte')}
               transition="all 0.2s"
             >
               Suporte

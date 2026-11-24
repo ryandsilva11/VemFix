@@ -93,7 +93,13 @@ export default function PerfilCliente() {
           {/* Botão Voltar */}
           <HStack
             as="button"
-            onClick={() => navigate(-1)}
+            onClick={() => {
+              if (window.history.state && window.history.state.idx > 0) {
+                navigate(-1);
+              } else {
+                navigate('/');
+              }
+            }}
             spacing={2}
             color="vemfix.graySubtitle"
             _hover={{ color: 'blue.600' }}

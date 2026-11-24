@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Box, Flex, HStack, Text, Icon, Image, useToast } from '@chakra-ui/react';
 import { FaStar, FaHeart } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
 export default function PostCard({ post }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
   const { isAutenticado, usuario } = useAuth();
 
@@ -45,7 +46,12 @@ export default function PostCard({ post }) {
   // Clicar no perfil do prestador (abre o perfil mesmo sem estar logado)
   const handlePerfilPrestador = () => {
     if (prestador?.id) {
-      navigate(`/prestador/${prestador.id}`);
+      const targetPath = `/prestador/${prestador.id}`;
+      if (location.pathname === targetPath) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      navigate(targetPath);
     }
   };
 
